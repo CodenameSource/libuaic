@@ -1,8 +1,9 @@
 #include <stdio.h>
 
-int five();
+#include "../../include/uai/data.h"
 
 int main()
 {
-    printf("%d\n", five());
+    DataFrame df = {0};
+    df_load_csv(&df, "test.csv", ',');
 }
