@@ -13,7 +13,7 @@ typedef struct
     size_t rows, cols;
     DataCell **data;
 
-    size_t strbuf_size, cellbuf_size;
+    size_t strbuf_size;
     char *strbuf;
     DataCell *cellbuf;
 } DataFrame;

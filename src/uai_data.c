@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
+#include <limits.h>
 
 #include "../include/uai/data.h"
 
@@ -21,6 +23,54 @@ static UAI_Status read_char(int fd, int *prev_char, int *current_char, int *next
         *next_char = nread ? c : EOF;
     } while (*current_char == NO_CHAR);
     return UAI_OK;
+}
+
+static inline uint16_t to_big_endian(uint16_t val)
+{
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    return (((val & 0x00FF) << CHAR_BIT) |
+            ((val & 0xFF00) >> CHAR_BIT));
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    return val;
+#else
+#    error unsupported endianness
+#endif
+}
+
+static bool is_crlf(const char *p)
+{
+    static_assert(CHAR_BIT == 8, "char is not 8 bits long, but we kinda expect it to be ;-;");
+    return to_big_endian(*(uint16_t *)p) == ('\r' << CHAR_BIT | '\n');
+}
+
+static bool is_eol(const char *p)
+{
+    return *p == '\n' || is_crlf(p);
+}
+
+struct lexer
+{
+    char *p, *end, sep;
+};
+
+static void skip_field(struct lexer *l)
+{
+    while (l->p < l->end && *l->p != l->sep && !is_eol(l->p))
+        ++l->p;
+}
+
+static void skip_and_escape_field(struct lexer *l)
+{
+    for (char *q=l->p, *prev=l->p;
+            l->p < l->end && (*l->p != '"' || l->p[1] == '"' || *prev == '"');
+            prev=l->p, ++l->p)
+    {
+        *q = *l->p;
+        if (*l->p != '"' || l->p[1] == '"')
+            ++q;
+    }
+    if (l->p < l->end)
+        *l->p++ = 0;
 }
 
 UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
@@ -87,14 +137,59 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
     }
     strbuf[size] = 0;
 
+    DataCell *cellbuf = malloc(sizeof *cellbuf * num_rows * num_cols);
+    if (!cellbuf)
+    {
+        err = UAI_ERRNO;
+        goto error_post_strbuf;
+    }
+    DataCell **rows = malloc(sizeof *rows * num_rows);
+    if (!rows)
+    {
+        err = UAI_ERRNO;
+        goto error_post_cellbuf;
+    }
+
+    struct lexer l = { strbuf, strbuf+size, sep };
+    for (size_t row = 0; row < num_rows; ++row)
+    {
+        rows[row] = cellbuf + row * num_cols;
+        for (size_t col = 0; col < num_cols; ++col)
+        {
+            if (*l.p == '"')
+            {
+                rows[row][col].str = ++l.p;
+                skip_and_escape_field(&l);
+            }
+            else
+            {
+                rows[row][col].str = l.p;
+                skip_field(&l);
+            }
+            assert(l.p < l.end  &&  *l.p == l.sep || is_eol(l.p));
+            if (*l.p == l.sep)
+                *l.p++ = 0;
+        }
+        assert(is_eol(l.p));
+        char c = *l.p;
+        *l.p = 0;
+        l.p += c == '\n' ? 1 : 2;
+    }
+
     df->strbuf = strbuf;
     df->strbuf_size = size;
 
     df->rows = num_rows, df->cols = num_cols;
+    df->cellbuf = cellbuf;
+    df->data = rows;
 
     close(fd);
     return UAI_OK;
 
+//error_post_rows:
+    //free(rows);
+error_post_cellbuf:
+    free(cellbuf);
 error_post_strbuf:
     free(strbuf);
 error_post_fd:

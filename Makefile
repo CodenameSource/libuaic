@@ -1,7 +1,7 @@
 CC = gcc
 
 # Flags common between library and executable
-CFLAGS  = -g -Iinclude -Wall -Werror -Wextra -pedantic -fpic
+CFLAGS  = -g -Iinclude -Wall -Werror -Wextra -Wno-parentheses -pedantic -fpic
 LDFLAGS =
 
 LIB = lib/libuaic.so
