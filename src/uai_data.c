@@ -197,3 +197,21 @@ error_post_fd:
     return err;
 }
 
+void df_set_header(DataFrame *df, bool value)
+{
+    // HACK: incrementing the data, may pass invalid block to free()!!!
+    if (value && !df->header)
+        df->header=*df->data, ++df->data, --df->rows;
+    else if (!value && df->header)
+        df->header=NULL, --df->data, ++df->rows;
+}
+
+void df_destroy(DataFrame *df)
+{
+    // Make sure that df->data is a valid pointer by disabling the header
+    df_set_header(df, false);
+    free(df->strbuf);
+    free(df->cellbuf);
+    free(df->data);
+    *df = (DataFrame){ 0 };
+}
