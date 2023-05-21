@@ -208,10 +208,10 @@ void df_set_header(DataFrame *df, bool value)
 
 void df_destroy(DataFrame *df)
 {
-    // Make sure that df->data is a valid pointer by disabling the header
-    df_set_header(df, false);
     free(df->strbuf);
     free(df->cellbuf);
-    free(df->data);
+    // HACK: because of the implementation of the header, we need to pass a
+    // decremented pointer to free()
+    free(df->header ? df->data-1 : df->data);
     *df = (DataFrame){ 0 };
 }
