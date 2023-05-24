@@ -9,7 +9,7 @@ OBJS = \
 	   src/uai_data.o \
 
 BINS = \
-	   examples/dataframe/load_csv \
+	   examples/dataframe/load_csv.out \
 
 all: $(LIB) $(BINS)
 
