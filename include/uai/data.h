@@ -2,9 +2,21 @@
 
 #include "common.h"
 
+enum DataCellType
+{
+    DATA_CELL_STR,
+    DATA_CELL_DOUBLE,
+    DATA_CELL_NAN,
+};
+
 typedef struct
 {
-    const char *str;
+    enum DataCellType type;
+    union
+    {
+        double as_double;
+        const char *as_str;
+    };
 } DataCell;
 
 /**

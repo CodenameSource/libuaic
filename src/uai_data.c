@@ -158,12 +158,14 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
         {
             if (*l.p == '"')
             {
-                rows[row][col].str = ++l.p;
+                rows[row][col].type = DATA_CELL_STR;
+                rows[row][col].as_str = ++l.p;
                 skip_and_escape_field(&l);
             }
             else
             {
-                rows[row][col].str = l.p;
+                rows[row][col].type = DATA_CELL_STR;
+                rows[row][col].as_str = l.p;
                 skip_field(&l);
             }
             assert(l.p < l.end  &&  *l.p == l.sep || is_eol(l.p));
