@@ -13,13 +13,14 @@ BINS = \
 
 all: $(LIB) $(BINS)
 
-$(BINS): $(LIB)
-
 lib:
 	mkdir -p lib
 
 $(LIB): lib $(OBJS)
 	$(CC) -shared -o $(LIB) $(OBJS)
+
+.c.out:
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
 
 clean:
 	rm -f $(OBJS) $(LIB) $(BINS)
