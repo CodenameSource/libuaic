@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include "../include/uai/data.h"
 
@@ -206,6 +207,28 @@ void df_set_header(DataFrame *df, bool value)
         df->header=*df->data, ++df->data, --df->rows;
     else if (!value && df->header)
         df->header=NULL, --df->data, ++df->rows;
+}
+
+void df_all_to_double(DataFrame *df, DF_ConvertStrictness todo_ignored)
+{
+    (void)todo_ignored;
+    for (size_t r=0; r < df->rows; ++r)
+        for(size_t c=0; c < df->cols; ++c)
+        {
+            if (df->data[r][c].type != DATA_CELL_STR)
+                continue;
+            char *rest;
+            double val = strtod(df->data[r][c].as_str, &rest);
+            // TODO: error checking (HUGE_VAL, ERANGE errno)
+            // TODO: strict/lax
+            if (rest != df->data[r][c].as_str)
+            {
+                df->data[r][c].type = DATA_CELL_DOUBLE;
+                df->data[r][c].as_double = val;
+            }
+            else
+                df->data[r][c].type = DATA_CELL_NAN;
+        }
 }
 
 void df_destroy(DataFrame *df)

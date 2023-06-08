@@ -10,6 +10,7 @@ OBJS = \
 
 BINS = \
 	   examples/dataframe/load_csv.out \
+	   examples/dataframe/convert.out \
 
 all: $(LIB) $(BINS)
 
