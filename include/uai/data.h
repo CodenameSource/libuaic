@@ -43,11 +43,10 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep);
  **/
 void df_set_header(DataFrame *df, bool value);
 
-// TODO: better name
 enum DataCell_ConvertStrictness
 {
-    DATA_CELL_CONVERT_LAX,
-    DATA_CELL_CONVERT_STRICT,
+    DC_CONVERT_LAX,
+    DC_CONVERT_STRICT,
 };
 
 // TODO: docs

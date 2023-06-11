@@ -221,7 +221,7 @@ void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
             // TODO: error checking (HUGE_VAL, ERANGE errno)
             // FIXME: strict conversions are strict about trailing whitespace: "1   ",
             //        but not leading whitespace
-            if ((strictness == DATA_CELL_CONVERT_LAX && rest != df->data[r][c].as_str) ||
+            if ((strictness == DC_CONVERT_LAX && rest != df->data[r][c].as_str) ||
                     rest && *rest)
             {
                 df->data[r][c].type = DATA_CELL_DOUBLE;
