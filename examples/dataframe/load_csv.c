@@ -9,7 +9,7 @@
 
 int main()
 {
-    setup_cwd(__FILE__);
+    setup_cwd();
 
     DataFrame df = {0};
     UAI_MUST(df_load_csv(&df, "csv/test.csv", ','));

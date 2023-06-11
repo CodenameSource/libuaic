@@ -7,10 +7,9 @@
 #include <malloc.h>
 
 // TODO: learn what inline does hihi
-void setup_cwd(const char *file_macro)
+void setup_cwd()
 {
-    // TOOD: check if dirname() usage is correct
-    char *cwd = strdup(file_macro), *dname = dirname(cwd);
+    char *cwd = strdup(__FILE__), *dname = dirname(cwd);
     assert(0 <= chdir(dname));
     free(cwd);
 }
