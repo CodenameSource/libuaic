@@ -270,7 +270,7 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
             // FIXME: strict conversions are strict about trailing whitespace: "1   ",
             //        but not leading whitespace
             if ((strictness == DC_CONVERT_LAX && rest != df->data[r][c].as_str) ||
-                    rest && *rest)
+                    (rest && !*rest))
             {
                 df->data[r][c].type = DATA_CELL_DOUBLE;
                 df->data[r][c].as_double = val;
@@ -278,6 +278,11 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
             else
                 df->data[r][c].type = DATA_CELL_NAN;
         }
+}
+
+void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness strictness)
+{
+    df_range_to_double(df, 0,col, df->rows-1,col, strictness);
 }
 
 void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
