@@ -44,13 +44,13 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep);
 void df_set_header(DataFrame *df, bool value);
 
 // TODO: better name
-typedef enum
+enum DataCell_ConvertStrictness
 {
     DATA_CELL_CONVERT_LAX,
     DATA_CELL_CONVERT_STRICT,
-} DF_ConvertStrictness;
+};
 
 // TODO: docs
-void df_all_to_double(DataFrame *df, DF_ConvertStrictness todo_ignored);
+void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness);
 
 void df_destroy(DataFrame *df);

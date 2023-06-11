@@ -209,9 +209,8 @@ void df_set_header(DataFrame *df, bool value)
         df->header=NULL, --df->data, ++df->rows;
 }
 
-void df_all_to_double(DataFrame *df, DF_ConvertStrictness todo_ignored)
+void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
 {
-    (void)todo_ignored;
     for (size_t r=0; r < df->rows; ++r)
         for(size_t c=0; c < df->cols; ++c)
         {
@@ -220,8 +219,10 @@ void df_all_to_double(DataFrame *df, DF_ConvertStrictness todo_ignored)
             char *rest;
             double val = strtod(df->data[r][c].as_str, &rest);
             // TODO: error checking (HUGE_VAL, ERANGE errno)
-            // TODO: strict/lax
-            if (rest != df->data[r][c].as_str)
+            // FIXME: strict conversions are strict about trailing whitespace: "1   ",
+            //        but not leading whitespace
+            if ((strictness == DATA_CELL_CONVERT_LAX && rest != df->data[r][c].as_str) ||
+                    rest && *rest)
             {
                 df->data[r][c].type = DATA_CELL_DOUBLE;
                 df->data[r][c].as_double = val;
