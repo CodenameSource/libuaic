@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <malloc.h>
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -207,6 +208,51 @@ void df_set_header(DataFrame *df, bool value)
         df->header=*df->data, ++df->data, --df->rows;
     else if (!value && df->header)
         df->header=NULL, --df->data, ++df->rows;
+}
+
+UAI_Status df_copy(const DataFrame *original, DataFrame *copy)
+{
+    size_t num_rows = original->rows + !!original->header, num_cols=original->cols;
+    char *strbuf = malloc(sizeof *strbuf * original->strbuf_size + 1);
+    if (!strbuf)
+        return UAI_ERRNO;
+    memcpy(strbuf, original->strbuf, sizeof *strbuf * original->strbuf_size + 1);
+
+    UAI_Status err = UAI_OK;
+
+    DataCell *cellbuf = malloc(sizeof *cellbuf * num_rows*num_cols);
+    if (!cellbuf)
+    {
+        err = UAI_ERRNO;
+        goto error_post_strbuf;
+    }
+    memcpy(cellbuf, original->cellbuf, sizeof *cellbuf * num_rows*num_cols);
+
+    DataCell **rows = malloc(sizeof *rows * num_rows);
+    if (!rows)
+    {
+        err = UAI_ERRNO;
+        goto error_post_cellbuf;
+    }
+    for (size_t row=0; row<num_rows; ++row)
+        rows[row] = cellbuf + row * num_cols;
+
+    copy->rows = original->rows, copy->cols = original->cols;
+    copy->cellbuf = cellbuf;
+    copy->strbuf_size = original->strbuf_size;
+    copy->strbuf = strbuf;
+    if (original->header)
+        copy->data = rows,   copy->header = NULL;
+    else
+        copy->data = rows+1, copy->header = *rows;
+
+    return UAI_OK;
+
+error_post_cellbuf:
+    free(cellbuf);
+error_post_strbuf:
+    free(strbuf);
+    return err;
 }
 
 void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)

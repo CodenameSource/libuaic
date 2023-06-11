@@ -43,6 +43,9 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep);
  **/
 void df_set_header(DataFrame *df, bool value);
 
+// TODO: docs
+UAI_Status df_copy(const DataFrame *original, DataFrame *copy);
+
 enum DataCell_ConvertStrictness
 {
     DC_CONVERT_LAX,
