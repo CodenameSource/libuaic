@@ -255,10 +255,12 @@ error_post_strbuf:
     return err;
 }
 
-void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
+void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, enum DataCell_ConvertStrictness strictness)
 {
-    for (size_t r=0; r < df->rows; ++r)
-        for(size_t c=0; c < df->cols; ++c)
+    assert(start_row <= end_row && end_row < df->rows);
+    assert(start_col <= end_col && end_col < df->cols);
+    for (size_t r=start_row; r <= end_row; ++r)
+        for(size_t c=start_col; c <= end_col; ++c)
         {
             if (df->data[r][c].type != DATA_CELL_STR)
                 continue;
@@ -276,6 +278,11 @@ void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
             else
                 df->data[r][c].type = DATA_CELL_NAN;
         }
+}
+
+void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
+{
+    df_range_to_double(df, 0, 0, df->rows-1, df->cols-1, strictness);
 }
 
 void df_destroy(DataFrame *df)
