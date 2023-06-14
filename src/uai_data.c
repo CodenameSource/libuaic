@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "../include/uai/data.h"
 
@@ -213,10 +214,10 @@ void df_set_header(DataFrame *df, bool value)
 UAI_Status df_copy(const DataFrame *original, DataFrame *copy)
 {
     size_t num_rows = original->rows + !!original->header, num_cols=original->cols;
-    char *strbuf = malloc(sizeof *strbuf * original->strbuf_size + 1);
+    char *strbuf = malloc(original->strbuf_size + 1);
     if (!strbuf)
         return UAI_ERRNO;
-    memcpy(strbuf, original->strbuf, sizeof *strbuf * original->strbuf_size + 1);
+    memcpy(strbuf, original->strbuf, original->strbuf_size + 1);
 
     UAI_Status err = UAI_OK;
 
@@ -242,9 +243,9 @@ UAI_Status df_copy(const DataFrame *original, DataFrame *copy)
     copy->strbuf_size = original->strbuf_size;
     copy->strbuf = strbuf;
     if (original->header)
-        copy->data = rows,   copy->header = NULL;
-    else
         copy->data = rows+1, copy->header = *rows;
+    else
+        copy->data = rows,   copy->header = NULL;
 
     return UAI_OK;
 
@@ -253,6 +254,13 @@ error_post_cellbuf:
 error_post_strbuf:
     free(strbuf);
     return err;
+}
+
+const char *skip_spaces(const char *s)
+{
+    while (isspace(*s))
+        s++;
+    return s;
 }
 
 void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, enum DataCell_ConvertStrictness strictness)
@@ -270,7 +278,7 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
             // FIXME: strict conversions are strict about trailing whitespace: "1   ",
             //        but not leading whitespace
             if ((strictness == DC_CONVERT_LAX && rest != df->data[r][c].as_str) ||
-                    (rest && !*rest))
+                    (rest && !*skip_spaces(rest)))
             {
                 df->data[r][c].type = DATA_CELL_DOUBLE;
                 df->data[r][c].as_double = val;

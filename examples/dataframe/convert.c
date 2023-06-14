@@ -21,11 +21,15 @@ int main()
     df_all_to_double(&df, DC_CONVERT_LAX);
     assert(df.data[0][1].type == DATA_CELL_DOUBLE);
     assert(df.data[0][0].type == DATA_CELL_NAN);
+    assert(df.data[2][1].type == DATA_CELL_DOUBLE);
+    assert(df.data[3][1].type == DATA_CELL_DOUBLE);
     printf("Distance Sofia-Pernik: %.2f (km)\n", df.data[0][1].as_double);
 
     df_col_to_double(&df2, 1, DC_CONVERT_STRICT);
     assert(df2.data[0][1].type == DATA_CELL_NAN);
     assert(df2.data[0][0].type == DATA_CELL_STR);
+    assert(df2.data[2][1].type == DATA_CELL_DOUBLE);
+    assert(df2.data[3][1].type == DATA_CELL_DOUBLE);
     puts("Distance Sofia-Pernik: nan");
 
     df_destroy(&df);
