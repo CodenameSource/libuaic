@@ -161,13 +161,13 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
         {
             if (*l.p == '"')
             {
-                rows[row][col].type = DATA_CELL_STR;
+                rows[row][col].type = DATACELL_STR;
                 rows[row][col].as_str = ++l.p;
                 skip_and_escape_field(&l);
             }
             else
             {
-                rows[row][col].type = DATA_CELL_STR;
+                rows[row][col].type = DATACELL_STR;
                 rows[row][col].as_str = l.p;
                 skip_field(&l);
             }
@@ -270,21 +270,21 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
     for (size_t r=start_row; r <= end_row; ++r)
         for(size_t c=start_col; c <= end_col; ++c)
         {
-            if (df->data[r][c].type != DATA_CELL_STR)
+            if (df->data[r][c].type != DATACELL_STR)
                 continue;
             char *rest;
             double val = strtod(df->data[r][c].as_str, &rest);
             // TODO: error checking (HUGE_VAL, ERANGE errno)
             // FIXME: strict conversions are strict about trailing whitespace: "1   ",
             //        but not leading whitespace
-            if ((strictness == DC_CONVERT_LAX && rest != df->data[r][c].as_str) ||
+            if ((strictness == DATACELL_CONVERT_LAX && rest != df->data[r][c].as_str) ||
                     (rest && !*skip_spaces(rest)))
             {
-                df->data[r][c].type = DATA_CELL_DOUBLE;
+                df->data[r][c].type = DATACELL_DOUBLE;
                 df->data[r][c].as_double = val;
             }
             else
-                df->data[r][c].type = DATA_CELL_NAN;
+                df->data[r][c].type = DATACELL_NAN;
         }
 }
 

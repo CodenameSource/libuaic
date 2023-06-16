@@ -4,9 +4,9 @@
 
 enum DataCellType
 {
-    DATA_CELL_STR,
-    DATA_CELL_DOUBLE,
-    DATA_CELL_NAN,
+    DATACELL_STR,
+    DATACELL_DOUBLE,
+    DATACELL_NAN,
 };
 
 typedef struct
@@ -48,8 +48,8 @@ UAI_Status df_copy(const DataFrame *original, DataFrame *copy);
 
 enum DataCell_ConvertStrictness
 {
-    DC_CONVERT_LAX,
-    DC_CONVERT_STRICT,
+    DATACELL_CONVERT_LAX,
+    DATACELL_CONVERT_STRICT,
 };
 
 // TODO: docs
