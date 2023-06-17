@@ -256,6 +256,38 @@ error_post_strbuf:
     return err;
 }
 
+UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
+{
+    DataCell *cellbuf = malloc(sizeof *cellbuf * num_rows * num_cols);
+    if (!cellbuf)
+        return UAI_ERRNO;
+
+    UAI_Status err = UAI_OK;
+
+    DataCell **rows = malloc(sizeof *rows * num_rows);
+    if (!rows)
+    {
+        err = UAI_ERRNO;
+        goto error_post_cellbuf;
+    }
+
+    for (size_t r=0; r<num_rows; ++r)
+    {
+        rows[r] = cellbuf + r * num_cols;
+        for (size_t c=0; c<num_cols; ++c)
+            rows[r][c].type = DATACELL_NAN;
+    }
+
+    df->rows = num_rows, df->cols = num_cols;
+    df->strbuf = NULL, df->strbuf_size = 0;
+    df->header = NULL;
+    return UAI_OK;
+
+error_post_cellbuf:
+    free(cellbuf);
+    return err;
+}
+
 const char *skip_spaces(const char *s)
 {
     while (isspace(*s))

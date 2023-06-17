@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "common.h"
 
@@ -33,6 +34,9 @@ typedef struct
 } DataFrame;
 
 UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep);
+
+// TODO: docs
+UAI_Status df_create(DataFrame *df, size_t rows, size_t cols);
 
 /**
  * @brief Set whether the DataFrame has a header or not
