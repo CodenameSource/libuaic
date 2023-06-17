@@ -65,16 +65,17 @@ static void skip_field(struct lexer *l)
 
 static void skip_and_escape_field(struct lexer *l)
 {
-    for (char *q=l->p, *prev=l->p;
-            l->p < l->end && (*l->p != '"' || l->p[1] == '"' || *prev == '"');
-            prev=l->p, ++l->p)
+    char *q=l->p;
+    for (char prev=0;
+            l->p < l->end && (*l->p != '"' || l->p[1] == '"' || prev == '"');
+            prev=*l->p, ++l->p)
     {
         *q = *l->p;
         if (*l->p != '"' || l->p[1] == '"')
             ++q;
     }
     if (l->p < l->end)
-        *l->p++ = 0;
+        *q = 0, ++l->p;
 }
 
 UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
