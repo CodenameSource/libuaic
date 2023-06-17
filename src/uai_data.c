@@ -299,7 +299,8 @@ UAI_Status df_export_csv(DataFrame *df, const char *filename, char sep)
     if (!f)
         return UAI_ERRNO;
 
-    for (size_t r=0; r<df->rows; ++r)
+    // HACK: truncatng a size_t, fails to work for numers > SSIZE_MAX
+    for (ssize_t r = -!!df->header; r < (ssize_t)df->rows; ++r)
     {
         for (size_t c=0; c<df->cols; ++c)
         {
