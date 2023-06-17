@@ -13,6 +13,7 @@ BINS = \
 	   examples/dataframe/convert.out \
 	   examples/dataframe/export_csv.out \
 	   examples/dataframe/split.out \
+	   examples/dataframe/fill.out \
 
 all: $(LIB) $(BINS)
 

@@ -358,6 +358,57 @@ UAI_Status df_export_csv(DataFrame *df, const char *filename, char sep)
     return UAI_OK;
 }
 
+static DataCell *find_next_cell(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    for (size_t r=start_row; r <= end_row; ++r)
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            return &df->data[r][col];
+    return NULL;
+}
+
+void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_row, int todo_ignored)
+{
+    (void)todo_ignored;
+    DataCell *next_cell, *prev_cell = next_cell = NULL;
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        switch (df->data[r][col].type)
+        {
+            case DATACELL_DOUBLE:
+                next_cell = NULL, prev_cell = &df->data[r][col];
+                break;
+
+            case DATACELL_NAN:
+                if (prev_cell && (next_cell || (next_cell = find_next_cell(df, col, r+1,end_row))))
+                {
+                    assert(prev_cell->type == next_cell->type && next_cell->type == DATACELL_DOUBLE);
+                    df->data[r][col].as_double = (prev_cell->as_double + next_cell->as_double) / 2;
+                    df->data[r][col].type = DATACELL_DOUBLE;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+
+void df_range_fill(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, int todo_ignored)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_fill(df, c, start_row, end_row, todo_ignored);
+}
+
+void df_col_fill(DataFrame *df, size_t col, int todo_ignored)
+{
+    df_col_range_fill(df, col, 0, df->rows-1, todo_ignored);
+}
+
+void df_fill(DataFrame *df, int todo_ignored)
+{
+    df_range_fill(df, 0,0, df->rows-1,df->cols, todo_ignored);
+}
+
 static const char *skip_spaces(const char *s)
 {
     while (isspace(*s))
@@ -377,8 +428,7 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
             char *rest;
             double val = strtod(df->data[r][c].as_str, &rest);
             // TODO: error checking (HUGE_VAL, ERANGE errno)
-            if ((strictness == DATACELL_CONVERT_LAX && rest != df->data[r][c].as_str) ||
-                    (rest && !*skip_spaces(rest)))
+            if (rest != df->data[r][c].as_str && (strictness == DATACELL_CONVERT_LAX || !*skip_spaces(rest)))
             {
                 df->data[r][c].type = DATACELL_DOUBLE;
                 df->data[r][c].as_double = val;
