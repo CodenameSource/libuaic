@@ -353,7 +353,7 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
     assert(start_row <= end_row && end_row < df->rows);
     assert(start_col <= end_col && end_col < df->cols);
     for (size_t r=start_row; r <= end_row; ++r)
-        for(size_t c=start_col; c <= end_col; ++c)
+        for (size_t c=start_col; c <= end_col; ++c)
         {
             if (df->data[r][c].type != DATACELL_STR)
                 continue;
@@ -376,9 +376,59 @@ void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness
     df_range_to_double(df, 0,col, df->rows-1,col, strictness);
 }
 
-void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
+void df_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
 {
     df_range_to_double(df, 0, 0, df->rows-1, df->cols-1, strictness);
+}
+
+int df_cell_compare(const DataCell *a, const DataCell *b)
+{
+    size_t type_diff = b->type - a->type;
+    if (type_diff)
+        return type_diff;
+    switch (a->type)
+    {
+        case DATACELL_NAN:
+            return 0;
+        case DATACELL_STR:
+            return strcmp(a->as_str, b->as_str);
+        case DATACELL_DOUBLE:
+            return b->as_double - a->as_double;
+    }
+    assert(0);
+}
+
+void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    assert(start_row <= end_row && end_row < df->rows);
+    assert(start_col <= end_col && end_col < df->cols);
+
+    static size_t latest_label = 0;
+
+    for (size_t r=start_row; r <= end_row; ++r)
+        for (size_t c=start_col; c <= end_col; ++c)
+        {
+            if (df->data[r][c].type != DATACELL_STR  ||  df->data[r][c].label)
+                continue;
+            ++latest_label;
+            for (size_t dr=r; dr <= end_row; ++dr)
+                for (size_t dc=c; dc <= end_col; ++dc)
+                {
+                    DataCell *cell_a=&df->data[r][c], *cell_b=&df->data[dr][dc];
+                    if (!cell_b->label && (cell_a == cell_b || !df_cell_compare(cell_a, cell_b)))
+                        cell_b->label = latest_label;
+                }
+        }
+}
+
+void df_col_add_labels(DataFrame *df, size_t col)
+{
+    df_range_add_labels(df, 0,col, df->rows-1,col);
+}
+
+void df_add_labels(DataFrame *df)
+{
+    df_range_add_labels(df, 0,0, df->rows-1,df->cols-1);
 }
 
 void df_destroy(DataFrame *df)

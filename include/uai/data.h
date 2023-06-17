@@ -65,6 +65,16 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
 
 void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness strictness);
 
-void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness);
+void df_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness);
+
+// TODO: docs
+int df_cell_compare(const DataCell *a, const DataCell *b);
+
+// TODO: docs
+void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_add_labels(DataFrame *df, size_t col);
+
+void df_add_labels(DataFrame *df);
 
 void df_destroy(DataFrame *df);
