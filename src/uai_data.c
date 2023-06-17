@@ -358,7 +358,7 @@ UAI_Status df_export_csv(DataFrame *df, const char *filename, char sep)
     return UAI_OK;
 }
 
-const char *skip_spaces(const char *s)
+static const char *skip_spaces(const char *s)
 {
     while (isspace(*s))
         s++;
