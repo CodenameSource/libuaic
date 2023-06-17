@@ -260,6 +260,21 @@ error_post_strbuf:
     return err;
 }
 
+UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, int todo_ignored)
+{
+    (void)todo_ignored;
+    assert(take <= src->rows);
+
+    UAI_Status err = df_copy(src, dst);
+    if (err)
+        return err;
+
+    src->rows -= take;
+    memmove(dst->data, dst->data + dst->rows - take, sizeof *dst->data * take);
+    dst->rows = take;
+    return UAI_OK;
+}
+
 UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
 {
     DataCell *cellbuf = malloc(sizeof *cellbuf * num_rows * num_cols);

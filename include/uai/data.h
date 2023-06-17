@@ -54,6 +54,9 @@ void df_set_header(DataFrame *df, bool value);
 // TODO: docs
 UAI_Status df_copy(const DataFrame *original, DataFrame *copy);
 
+// TODO: docs
+UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, int todo_ignored);
+
 enum DataCell_ConvertStrictness
 {
     DATACELL_CONVERT_LAX,
