@@ -260,10 +260,12 @@ error_post_strbuf:
     return err;
 }
 
-UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, int todo_ignored)
+UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling)
 {
-    (void)todo_ignored;
     assert(take <= src->rows);
+
+    if (sampling == DATAFRAME_SAMPLE_RAND)
+        df_shuffle_rows(src);
 
     UAI_Status err = df_copy(src, dst);
     if (err)
@@ -444,6 +446,24 @@ void df_col_add_labels(DataFrame *df, size_t col)
 void df_add_labels(DataFrame *df)
 {
     df_range_add_labels(df, 0,0, df->rows-1,df->cols-1);
+}
+
+void df_swap_rows(DataFrame *df, size_t row1, size_t row2)
+{
+    for (size_t c=0; c<df->cols; ++c)
+    {
+        DataCell tmp = df->data[row2][c];
+        df->data[row2][c] = df->data[row1][c], df->data[row1][c] = tmp;
+    }
+}
+
+void df_shuffle_rows(DataFrame *df)
+{
+    for (size_t i = 0; i < df->rows - 1; i++)
+    {
+        size_t j = i + rand() / (RAND_MAX / (df->rows - i) + 1);
+        df_swap_rows(df, i, j);
+    }
 }
 
 void df_destroy(DataFrame *df)

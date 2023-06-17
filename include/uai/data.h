@@ -54,8 +54,14 @@ void df_set_header(DataFrame *df, bool value);
 // TODO: docs
 UAI_Status df_copy(const DataFrame *original, DataFrame *copy);
 
+enum DataFrame_Sampling
+{
+    DATAFRAME_SAMPLE_SEQ,
+    DATAFRAME_SAMPLE_RAND,
+};
+
 // TODO: docs
-UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, int todo_ignored);
+UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling);
 
 enum DataCell_ConvertStrictness
 {
@@ -79,5 +85,11 @@ void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size
 void df_col_add_labels(DataFrame *df, size_t col);
 
 void df_add_labels(DataFrame *df);
+
+// TODO: docs
+void df_swap_rows(DataFrame *df, size_t row1, size_t row2);
+
+// TODO: docs
+void df_shuffle_rows(DataFrame *df);
 
 void df_destroy(DataFrame *df);
