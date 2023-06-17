@@ -162,6 +162,7 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
         rows[row] = cellbuf + row * num_cols;
         for (size_t col = 0; col < num_cols; ++col)
         {
+            rows[row][col].label = 0;
             if (*l.p == '"')
             {
                 rows[row][col].type = DATACELL_STR;
@@ -278,7 +279,7 @@ UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
     {
         rows[r] = cellbuf + r * num_cols;
         for (size_t c=0; c<num_cols; ++c)
-            rows[r][c].type = DATACELL_NAN;
+            rows[r][c].type = DATACELL_NAN, rows[r][c].label = 0;
     }
 
     df->rows = num_rows, df->cols = num_cols;

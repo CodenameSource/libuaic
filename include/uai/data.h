@@ -18,6 +18,7 @@ typedef struct
         double as_double;
         const char *as_str;
     };
+    size_t label;
 } DataCell;
 
 /**
