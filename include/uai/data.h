@@ -1,10 +1,23 @@
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "common.h"
 
+enum DataCellType
+{
+    DATACELL_STR,
+    DATACELL_DOUBLE,
+    DATACELL_NAN,
+};
+
 typedef struct
 {
-    const char *str;
+    enum DataCellType type;
+    union
+    {
+        double as_double;
+        const char *as_str;
+    };
 } DataCell;
 
 /**
@@ -22,6 +35,12 @@ typedef struct
 
 UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep);
 
+// TODO: docs
+UAI_Status df_create(DataFrame *df, size_t rows, size_t cols);
+
+// TODO: docs
+UAI_Status df_export_csv(DataFrame *df, const char *filename, char sep);
+
 /**
  * @brief Set whether the DataFrame has a header or not
  *
@@ -30,5 +49,21 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep);
  *
  **/
 void df_set_header(DataFrame *df, bool value);
+
+// TODO: docs
+UAI_Status df_copy(const DataFrame *original, DataFrame *copy);
+
+enum DataCell_ConvertStrictness
+{
+    DATACELL_CONVERT_LAX,
+    DATACELL_CONVERT_STRICT,
+};
+
+// TODO: docs
+void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, enum DataCell_ConvertStrictness strictness);
+
+void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness strictness);
+
+void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness);
 
 void df_destroy(DataFrame *df);
