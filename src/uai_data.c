@@ -359,8 +359,6 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
             char *rest;
             double val = strtod(df->data[r][c].as_str, &rest);
             // TODO: error checking (HUGE_VAL, ERANGE errno)
-            // FIXME: strict conversions are strict about trailing whitespace: "1   ",
-            //        but not leading whitespace
             if ((strictness == DATACELL_CONVERT_LAX && rest != df->data[r][c].as_str) ||
                     (rest && !*skip_spaces(rest)))
             {
