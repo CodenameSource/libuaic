@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <malloc.h>
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -79,6 +80,7 @@ static void skip_and_escape_field(struct lexer *l)
 UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
 {
     assert(sep != '"' && "Cannot use \" as separator");
+    assert(sep != '\n' && "Cannot use \\n as separator");
 
     int fd = open(filename, O_RDONLY);
     if (!fd)
@@ -286,6 +288,54 @@ UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
 error_post_cellbuf:
     free(cellbuf);
     return err;
+}
+
+UAI_Status df_export_csv(DataFrame *df, const char *filename, char sep)
+{
+    assert(sep != '"' && "Cannot use \" as separator");
+    assert(sep != '\n' && "Cannot use \\n as separator");
+
+    FILE *f = fopen(filename, "w");
+    if (!f)
+        return UAI_ERRNO;
+
+    for (size_t r=0; r<df->rows; ++r)
+    {
+        for (size_t c=0; c<df->cols; ++c)
+        {
+            switch (df->data[r][c].type)
+            {
+                case DATACELL_DOUBLE:
+                    fprintf(f, "%f", df->data[r][c].as_double);
+                    break;
+                case DATACELL_STR:
+                    if (strchr(df->data[r][c].as_str, sep) || strchr(df->data[r][c].as_str, '\n'))
+                    {
+                        fputc('"', f);
+                        for (const char *p = df->data[r][c].as_str; *p; ++p)
+                        {
+                            if (*p == '"')
+                                fputs("\"\"", f);
+                            else
+                                fputc(*p, f);
+                        }
+                        fputc('"', f);
+                    }
+                    else
+                        fputs(df->data[r][c].as_str, f);
+                    break;
+                case DATACELL_NAN:
+                    break;
+            }
+            if (c != df->cols-1)
+                fputc(sep, f);
+        }
+        fputc('\n', f);
+    }
+
+    if (fclose(f) < 0)
+        return UAI_ERRNO;
+    return UAI_OK;
 }
 
 const char *skip_spaces(const char *s)

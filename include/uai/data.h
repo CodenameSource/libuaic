@@ -38,6 +38,9 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep);
 // TODO: docs
 UAI_Status df_create(DataFrame *df, size_t rows, size_t cols);
 
+// TODO: docs
+UAI_Status df_export_csv(DataFrame *df, const char *filename, char sep);
+
 /**
  * @brief Set whether the DataFrame has a header or not
  *
