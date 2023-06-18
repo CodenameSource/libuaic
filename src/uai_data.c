@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "../include/uai/data.h"
 
@@ -162,6 +163,7 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
         rows[row] = cellbuf + row * num_cols;
         for (size_t col = 0; col < num_cols; ++col)
         {
+            rows[row][col].label = 0;
             if (*l.p == '"')
             {
                 rows[row][col].type = DATACELL_STR;
@@ -259,6 +261,40 @@ error_post_strbuf:
     return err;
 }
 
+UAI_Status df_create_hsplit(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling)
+{
+    assert(take <= src->rows);
+
+    if (sampling == DATAFRAME_SAMPLE_RAND)
+        df_shuffle_rows(src);
+
+    UAI_Status err = df_copy(src, dst);
+    if (err)
+        return err;
+
+    src->rows -= take;
+    // memmove(dst->data, dst->data + dst->rows - take, sizeof *dst->data * take);
+    memmove(*dst->data, *dst->data + (dst->rows - take) * dst->cols, sizeof **dst->data * take * dst->cols);
+    dst->rows = take;
+    return UAI_OK;
+}
+
+UAI_Status df_create_vsplit(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling)
+{
+    assert(take <= src->rows);
+    assert(sampling == DATAFRAME_SAMPLE_SEQ && "Only sequential sampling is supported");
+
+    UAI_Status err = df_copy(src, dst);
+    if (err)
+        return err;
+
+    src->cols -= take;
+    for (DataCell *r = dst->cellbuf; r < dst->cellbuf + dst->rows * dst->cols; r += dst->cols)
+        memcpy(r, r + dst->cols - take, sizeof *r * take);
+    dst->cols = take;
+    return UAI_OK;
+}
+
 UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
 {
     DataCell *cellbuf = malloc(sizeof *cellbuf * num_rows * num_cols);
@@ -278,7 +314,7 @@ UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
     {
         rows[r] = cellbuf + r * num_cols;
         for (size_t c=0; c<num_cols; ++c)
-            rows[r][c].type = DATACELL_NAN;
+            rows[r][c].type = DATACELL_NAN, rows[r][c].label = 0;
     }
 
     df->rows = num_rows, df->cols = num_cols;
@@ -340,7 +376,74 @@ UAI_Status df_export_csv(DataFrame *df, const char *filename, char sep)
     return UAI_OK;
 }
 
-const char *skip_spaces(const char *s)
+static DataCell *find_next_cell(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    for (size_t r=start_row; r <= end_row; ++r)
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            return &df->data[r][col];
+    return NULL;
+}
+
+void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    DataCell *next_cell, *prev_cell = next_cell = NULL;
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        switch (df->data[r][col].type)
+        {
+            case DATACELL_DOUBLE:
+                next_cell = NULL, prev_cell = &df->data[r][col];
+                break;
+
+            case DATACELL_NAN:
+                if (prev_cell && (next_cell || (next_cell = find_next_cell(df, col, r+1,end_row))))
+                {
+                    assert(prev_cell->type == next_cell->type && next_cell->type == DATACELL_DOUBLE);
+                    df->data[r][col].as_double = (prev_cell->as_double + next_cell->as_double) / 2;
+                    df->data[r][col].type = DATACELL_DOUBLE;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+
+void df_range_fill(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_fill(df, c, start_row, end_row);
+}
+
+void df_col_fill(DataFrame *df, size_t col)
+{
+    df_col_range_fill(df, col, 0, df->rows-1);
+}
+
+void df_fill(DataFrame *df)
+{
+    df_range_fill(df, 0,0, df->rows-1,df->cols);
+}
+
+void df_range_fill_const(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, double value)
+{
+    for (size_t r=start_row; r <= end_row; ++r)
+        for (size_t c=start_col; c <= end_col; ++c)
+            df->data[r][c].type = DATACELL_DOUBLE, df->data[r][c].as_double = value;
+}
+
+void df_col_fill_const(DataFrame *df, size_t col, double value)
+{
+    df_range_fill_const(df, 0,col, df->rows-1,col, value);
+}
+
+void df_fill_const(DataFrame *df, double value)
+{
+    df_range_fill_const(df, 0,0, df->rows-1,df->cols-1, value);
+}
+
+static const char *skip_spaces(const char *s)
 {
     while (isspace(*s))
         s++;
@@ -352,15 +455,14 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
     assert(start_row <= end_row && end_row < df->rows);
     assert(start_col <= end_col && end_col < df->cols);
     for (size_t r=start_row; r <= end_row; ++r)
-        for(size_t c=start_col; c <= end_col; ++c)
+        for (size_t c=start_col; c <= end_col; ++c)
         {
             if (df->data[r][c].type != DATACELL_STR)
                 continue;
             char *rest;
             double val = strtod(df->data[r][c].as_str, &rest);
             // TODO: error checking (HUGE_VAL, ERANGE errno)
-            if ((strictness == DATACELL_CONVERT_LAX && rest != df->data[r][c].as_str) ||
-                    (rest && !*skip_spaces(rest)))
+            if (rest != df->data[r][c].as_str && (strictness == DATACELL_CONVERT_LAX || !*skip_spaces(rest)))
             {
                 df->data[r][c].type = DATACELL_DOUBLE;
                 df->data[r][c].as_double = val;
@@ -375,9 +477,206 @@ void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness
     df_range_to_double(df, 0,col, df->rows-1,col, strictness);
 }
 
-void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
+void df_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
 {
     df_range_to_double(df, 0, 0, df->rows-1, df->cols-1, strictness);
+}
+
+void df_col_range_min_max(const DataFrame *df, size_t col, size_t start_row, size_t end_row, double *min, double *max)
+{
+#ifdef INFINITY
+    *max = -INFINITY, *min = INFINITY;
+#else
+    *max = -HUGE_VAL, *min = HUGE_VAL;
+#endif
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type != DATACELL_DOUBLE)
+            continue;
+        if (*max < df->data[r][col].as_double)
+            *max = df->data[r][col].as_double;
+        if (df->data[r][col].as_double < *min)
+            *min = df->data[r][col].as_double;
+    }
+}
+
+static double range_average(const DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, double *sum, size_t *count)
+{
+    *sum=0, *count=0;
+    for (size_t r=start_row; r <= end_row; ++r)
+        for (size_t c=start_col; c <= end_col; ++c)
+            if (df->data[r][c].type == DATACELL_DOUBLE)
+                *sum += df->data[r][c].as_double, ++*count;
+    return *sum / *count;
+}
+
+static double stddev(double value, double average, size_t count)
+{
+    double d = value - average;
+    return sqrt(d*d / (count-1));
+}
+
+void df_col_min_max(const DataFrame *df, size_t col, double *min, double *max)
+{
+    df_col_range_min_max(df, col, 0,df->rows-1, min, max);
+}
+
+void df_col_range_standardize(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    double sum;
+    size_t count;
+    double average = range_average(df, start_row,col, end_row,col, &sum, &count);
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            df->data[r][col].as_double = (df->data[r][col].as_double - average) / stddev(df->data[r][col].as_double, average, count);
+    }
+}
+
+void df_range_standardize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_standardize(df, c, start_row, end_row);
+}
+
+void df_col_standardize(DataFrame *df, size_t col)
+{
+    df_col_range_standardize(df, col, 0, df->rows-1);
+}
+
+void df_standardize(DataFrame *df)
+{
+    df_range_standardize(df, 0,0, df->rows-1,df->cols-1);
+}
+
+void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    double min, max;
+    df_col_range_min_max(df, col, start_row, end_row, &min, &max);
+    double delta = max-min;
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            df->data[r][col].as_double = (df->data[r][col].as_double - min) / delta;
+    }
+}
+
+void df_range_normalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_normalize(df, c, start_row, end_row);
+}
+
+void df_col_normalize(DataFrame *df, size_t col)
+{
+    df_col_range_normalize(df, col, 0, df->rows-1);
+}
+
+void df_normalize(DataFrame *df)
+{
+    df_range_normalize(df, 0,0, df->rows-1,df->cols-1);
+}
+
+int df_cell_compare(const DataCell *a, const DataCell *b)
+{
+    size_t type_diff = b->type - a->type;
+    if (type_diff)
+        return type_diff;
+    switch (a->type)
+    {
+        case DATACELL_NAN:
+            return 0;
+        case DATACELL_STR:
+            return strcmp(a->as_str, b->as_str);
+        case DATACELL_DOUBLE:
+            return b->as_double - a->as_double;
+    }
+    assert(0);
+}
+
+void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    assert(start_row <= end_row && end_row < df->rows);
+    assert(start_col <= end_col && end_col < df->cols);
+
+    static size_t latest_label = 0;
+
+    for (size_t r=start_row; r <= end_row; ++r)
+        for (size_t c=start_col; c <= end_col; ++c)
+        {
+            if (df->data[r][c].type != DATACELL_STR  ||  df->data[r][c].label)
+                continue;
+            ++latest_label;
+            for (size_t dr=r; dr <= end_row; ++dr)
+                for (size_t dc=c; dc <= end_col; ++dc)
+                {
+                    DataCell *cell_a=&df->data[r][c], *cell_b=&df->data[dr][dc];
+                    if (!cell_b->label && (cell_a == cell_b || !df_cell_compare(cell_a, cell_b)))
+                        cell_b->label = latest_label;
+                }
+        }
+}
+
+void df_col_add_labels(DataFrame *df, size_t col)
+{
+    df_range_add_labels(df, 0,col, df->rows-1,col);
+}
+
+void df_add_labels(DataFrame *df)
+{
+    df_range_add_labels(df, 0,0, df->rows-1,df->cols-1);
+}
+
+void df_swap_rows(DataFrame *df, size_t row1, size_t row2)
+{
+    for (size_t c=0; c<df->cols; ++c)
+    {
+        DataCell tmp = df->data[row2][c];
+        df->data[row2][c] = df->data[row1][c], df->data[row1][c] = tmp;
+    }
+}
+
+void df_shuffle_rows(DataFrame *df)
+{
+    for (size_t i = 0; i < df->rows - 1; i++)
+    {
+        size_t j = i + rand() / (RAND_MAX / (df->rows - i) + 1);
+        df_swap_rows(df, i, j);
+    }
+}
+
+UAI_Status df_prepend_cols(DataFrame *df, size_t new_cols)
+{
+    static_assert(DATACELL_NAN == 0, "DATACELL_NAN is not first in the DataCellType enum");
+
+    bool had_header = !!df->header;
+    df_set_header(df, false);
+
+    UAI_Status ret;
+
+    size_t num_cols = df->cols + new_cols;
+    DataCell *cellbuf = calloc(df->rows * num_cols, sizeof *cellbuf);
+    if (!cellbuf)
+    {
+        ret = UAI_ERRNO;
+        goto end;
+    }
+
+    for (size_t r=0; r < df->rows; ++r)
+    {
+        for (size_t c=0; c < df->cols; ++c)
+            cellbuf[r * num_cols + c + new_cols] = df->data[r][c];
+        df->data[r] = cellbuf + r * num_cols;
+    }
+
+    free(df->cellbuf);
+    df->cellbuf = cellbuf;
+    df->cols = num_cols;
+
+    ret = UAI_OK;
+end:
+    df_set_header(df, had_header);
+    return ret;
 }
 
 void df_destroy(DataFrame *df)

@@ -2,7 +2,7 @@ CC = gcc
 
 # Flags common between library and executable
 CFLAGS  = -g -Iinclude -Wall -Werror -Wextra -Wno-parentheses -pedantic -fpic
-LDFLAGS = -Llib -Wl,-rpath=$$PWD/lib -luaic
+LDFLAGS = -Llib -Wl,-rpath=$$PWD/lib -luaic -lm
 
 LIB = lib/libuaic.so
 OBJS = \
@@ -12,6 +12,10 @@ BINS = \
 	   examples/dataframe/load_csv.out \
 	   examples/dataframe/convert.out \
 	   examples/dataframe/export_csv.out \
+	   examples/dataframe/split.out \
+	   examples/dataframe/fill.out \
+	   examples/dataframe/resize.out \
+	   examples/dataframe/scale_data.out \
 
 all: $(LIB) $(BINS)
 
