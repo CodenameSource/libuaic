@@ -260,7 +260,7 @@ error_post_strbuf:
     return err;
 }
 
-UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling)
+UAI_Status df_create_hsplit(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling)
 {
     assert(take <= src->rows);
 
@@ -272,8 +272,25 @@ UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, enum Dat
         return err;
 
     src->rows -= take;
-    memmove(dst->data, dst->data + dst->rows - take, sizeof *dst->data * take);
+    // memmove(dst->data, dst->data + dst->rows - take, sizeof *dst->data * take);
+    memmove(*dst->data, *dst->data + (dst->rows - take) * dst->cols, sizeof **dst->data * take * dst->cols);
     dst->rows = take;
+    return UAI_OK;
+}
+
+UAI_Status df_create_vsplit(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling)
+{
+    assert(take <= src->rows);
+    assert(sampling == DATAFRAME_SAMPLE_SEQ && "Only sequential sampling is supported");
+
+    UAI_Status err = df_copy(src, dst);
+    if (err)
+        return err;
+
+    src->cols -= take;
+    for (DataCell *r = dst->cellbuf; r < dst->cellbuf + dst->rows * dst->cols; r += dst->cols)
+        memcpy(r, r + dst->cols - take, sizeof *r * take);
+    dst->cols = take;
     return UAI_OK;
 }
 
