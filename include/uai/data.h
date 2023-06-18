@@ -64,13 +64,13 @@ enum DataFrame_Sampling
 UAI_Status df_create_split(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling);
 
 // TODO: docs
-void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_row);
+void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_row, int todo_ignored);
 
-void df_range_fill(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+void df_range_fill(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, int todo_ignored);
 
-void df_col_fill(DataFrame *df, size_t col);
+void df_col_fill(DataFrame *df, size_t col, int todo_ignored);
 
-void df_fill(DataFrame *df);
+void df_fill(DataFrame *df, int todo_ignored);
 
 enum DataCell_ConvertStrictness
 {
