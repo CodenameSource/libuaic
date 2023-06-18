@@ -163,7 +163,6 @@ UAI_Status df_load_csv(DataFrame *df, const char *filename, char sep)
         rows[row] = cellbuf + row * num_cols;
         for (size_t col = 0; col < num_cols; ++col)
         {
-            rows[row][col].label = 0;
             if (*l.p == '"')
             {
                 rows[row][col].type = DATACELL_STR;
@@ -314,7 +313,7 @@ UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
     {
         rows[r] = cellbuf + r * num_cols;
         for (size_t c=0; c<num_cols; ++c)
-            rows[r][c].type = DATACELL_NAN, rows[r][c].label = 0;
+            rows[r][c].type = DATACELL_NAN;
     }
 
     df->rows = num_rows, df->cols = num_cols;
@@ -604,15 +603,15 @@ void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size
     for (size_t r=start_row; r <= end_row; ++r)
         for (size_t c=start_col; c <= end_col; ++c)
         {
-            if (df->data[r][c].type != DATACELL_STR  ||  df->data[r][c].label)
+            if (df->data[r][c].type != DATACELL_STR)
                 continue;
             ++latest_label;
             for (size_t dr=r; dr <= end_row; ++dr)
                 for (size_t dc=c; dc <= end_col; ++dc)
                 {
                     DataCell *cell_a=&df->data[r][c], *cell_b=&df->data[dr][dc];
-                    if (!cell_b->label && (cell_a == cell_b || !df_cell_compare(cell_a, cell_b)))
-                        cell_b->label = latest_label;
+                    if (cell_a == cell_b || !df_cell_compare(cell_a, cell_b))
+                        cell_b->type = DATACELL_DOUBLE, cell_b->as_double = latest_label;
                 }
         }
 }
