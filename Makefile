@@ -14,6 +14,7 @@ BINS = \
 	   examples/dataframe/export_csv.out \
 	   examples/dataframe/split.out \
 	   examples/dataframe/fill.out \
+	   examples/dataframe/resize.out \
 
 all: $(LIB) $(BINS)
 

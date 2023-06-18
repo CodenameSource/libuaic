@@ -5,9 +5,9 @@
 
 enum DataCellType
 {
+    DATACELL_NAN,
     DATACELL_STR,
     DATACELL_DOUBLE,
-    DATACELL_NAN,
 };
 
 typedef struct
@@ -107,5 +107,8 @@ void df_swap_rows(DataFrame *df, size_t row1, size_t row2);
 
 // TODO: docs
 void df_shuffle_rows(DataFrame *df);
+
+// TODO: docs
+UAI_Status df_prepend_cols(DataFrame *df, size_t new_cols);
 
 void df_destroy(DataFrame *df);

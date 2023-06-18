@@ -533,6 +533,40 @@ void df_shuffle_rows(DataFrame *df)
     }
 }
 
+UAI_Status df_prepend_cols(DataFrame *df, size_t new_cols)
+{
+    static_assert(DATACELL_NAN == 0, "DATACELL_NAN is not first in the DataCellType enum");
+
+    bool had_header = !!df->header;
+    df_set_header(df, false);
+
+    UAI_Status ret;
+
+    size_t num_cols = df->cols + new_cols;
+    DataCell *cellbuf = calloc(df->rows * num_cols, sizeof *cellbuf);
+    if (!cellbuf)
+    {
+        ret = UAI_ERRNO;
+        goto end;
+    }
+
+    for (size_t r=0; r < df->rows; ++r)
+    {
+        for (size_t c=0; c < df->cols; ++c)
+            cellbuf[r * num_cols + c + new_cols] = df->data[r][c];
+        df->data[r] = cellbuf + r * num_cols;
+    }
+
+    free(df->cellbuf);
+    df->cellbuf = cellbuf;
+    df->cols = num_cols;
+
+    ret = UAI_OK;
+end:
+    df_set_header(df, had_header);
+    return ret;
+}
+
 void df_destroy(DataFrame *df)
 {
     free(df->strbuf);
