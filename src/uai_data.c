@@ -384,9 +384,8 @@ static DataCell *find_next_cell(DataFrame *df, size_t col, size_t start_row, siz
     return NULL;
 }
 
-void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_row, int todo_ignored)
+void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_row)
 {
-    (void)todo_ignored;
     DataCell *next_cell, *prev_cell = next_cell = NULL;
     for (size_t r=start_row; r <= end_row; ++r)
     {
@@ -411,20 +410,20 @@ void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_r
     }
 }
 
-void df_range_fill(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, int todo_ignored)
+void df_range_fill(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
 {
     for (size_t c=start_col; c <= end_col; ++c)
-        df_col_range_fill(df, c, start_row, end_row, todo_ignored);
+        df_col_range_fill(df, c, start_row, end_row);
 }
 
-void df_col_fill(DataFrame *df, size_t col, int todo_ignored)
+void df_col_fill(DataFrame *df, size_t col)
 {
-    df_col_range_fill(df, col, 0, df->rows-1, todo_ignored);
+    df_col_range_fill(df, col, 0, df->rows-1);
 }
 
-void df_fill(DataFrame *df, int todo_ignored)
+void df_fill(DataFrame *df)
 {
-    df_range_fill(df, 0,0, df->rows-1,df->cols, todo_ignored);
+    df_range_fill(df, 0,0, df->rows-1,df->cols);
 }
 
 void df_range_fill_const(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, double value)
