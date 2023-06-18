@@ -72,6 +72,13 @@ void df_col_fill(DataFrame *df, size_t col, int todo_ignored);
 
 void df_fill(DataFrame *df, int todo_ignored);
 
+// TODO: docs
+void df_range_fill_const(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, double value);
+
+void df_col_fill_const(DataFrame *df, size_t col, double value);
+
+void df_fill_const(DataFrame *df, double value);
+
 enum DataCell_ConvertStrictness
 {
     DATACELL_CONVERT_LAX,

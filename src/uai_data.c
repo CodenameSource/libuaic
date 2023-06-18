@@ -409,6 +409,23 @@ void df_fill(DataFrame *df, int todo_ignored)
     df_range_fill(df, 0,0, df->rows-1,df->cols, todo_ignored);
 }
 
+void df_range_fill_const(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, double value)
+{
+    for (size_t r=start_row; r <= end_row; ++r)
+        for (size_t c=start_col; c <= end_col; ++c)
+            df->data[r][c].type = DATACELL_DOUBLE, df->data[r][c].as_double = value;
+}
+
+void df_col_fill_const(DataFrame *df, size_t col, double value)
+{
+    df_range_fill_const(df, 0,col, df->rows-1,col, value);
+}
+
+void df_fill_const(DataFrame *df, double value)
+{
+    df_range_fill_const(df, 0,0, df->rows-1,df->cols-1, value);
+}
+
 static const char *skip_spaces(const char *s)
 {
     while (isspace(*s))
