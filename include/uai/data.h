@@ -95,6 +95,29 @@ void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness
 void df_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness);
 
 // TODO: docs
+void df_col_range_min_max(const DataFrame *df, size_t col, size_t start_row, size_t end_row, double *min, double *max);
+
+void df_col_min_max(const DataFrame *df, size_t col, double *min, double *max);
+
+// TODO: docs
+void df_col_range_standardize(DataFrame *df, size_t col, size_t start_row, size_t end_row);
+
+void df_range_standardize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_standardize(DataFrame *df, size_t col);
+
+void df_standardize(DataFrame *df);
+
+// TODO: docs
+void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t end_row);
+
+void df_range_normalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_normalize(DataFrame *df, size_t col);
+
+void df_normalize(DataFrame *df);
+
+// TODO: docs
 int df_cell_compare(const DataCell *a, const DataCell *b);
 
 // TODO: docs

@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "../include/uai/data.h"
 
@@ -480,6 +481,101 @@ void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness
 void df_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness)
 {
     df_range_to_double(df, 0, 0, df->rows-1, df->cols-1, strictness);
+}
+
+void df_col_range_min_max(const DataFrame *df, size_t col, size_t start_row, size_t end_row, double *min, double *max)
+{
+#ifdef INFINITY
+    *max = -INFINITY, *min = INFINITY;
+#else
+    *max = -HUGE_VAL, *min = HUGE_VAL;
+#endif
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type != DATACELL_DOUBLE)
+            continue;
+        if (*max < df->data[r][col].as_double)
+            *max = df->data[r][col].as_double;
+        if (df->data[r][col].as_double < *min)
+            *min = df->data[r][col].as_double;
+    }
+}
+
+static double range_average(const DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, double *sum, size_t *count)
+{
+    *sum=0, *count=0;
+    for (size_t r=start_row; r <= end_row; ++r)
+        for (size_t c=start_col; c <= end_col; ++c)
+            if (df->data[r][c].type == DATACELL_DOUBLE)
+                *sum += df->data[r][c].as_double, ++*count;
+    return *sum / *count;
+}
+
+static double stddev(double value, double average, size_t count)
+{
+    double d = value - average;
+    return sqrt(d*d / (count-1));
+}
+
+void df_col_min_max(const DataFrame *df, size_t col, double *min, double *max)
+{
+    df_col_range_min_max(df, col, 0,df->rows-1, min, max);
+}
+
+void df_col_range_standardize(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    double sum;
+    size_t count;
+    double average = range_average(df, start_row,col, end_row,col, &sum, &count);
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            df->data[r][col].as_double = (df->data[r][col].as_double - average) / stddev(df->data[r][col].as_double, average, count);
+    }
+}
+
+void df_range_standardize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_standardize(df, c, start_row, end_row);
+}
+
+void df_col_standardize(DataFrame *df, size_t col)
+{
+    df_col_range_standardize(df, col, 0, df->rows-1);
+}
+
+void df_standardize(DataFrame *df)
+{
+    df_range_standardize(df, 0,0, df->rows-1,df->cols-1);
+}
+
+void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    double min, max;
+    df_col_range_min_max(df, col, start_row, end_row, &min, &max);
+    double delta = max-min;
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            df->data[r][col].as_double = (df->data[r][col].as_double - min) / delta;
+    }
+}
+
+void df_range_normalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_normalize(df, c, start_row, end_row);
+}
+
+void df_col_normalize(DataFrame *df, size_t col)
+{
+    df_col_range_normalize(df, col, 0, df->rows-1);
+}
+
+void df_normalize(DataFrame *df)
+{
+    df_range_normalize(df, 0,0, df->rows-1,df->cols-1);
 }
 
 int df_cell_compare(const DataCell *a, const DataCell *b)
