@@ -5,20 +5,21 @@
 
 #include "../include/uai/logistic_regression.h"
 
-double squish(const double *beta, DataCell *x, size_t data_size);
+static double squish(const double *beta, DataCell *x, size_t data_size);
 
-double log_loss(double y, double y_pred);
+static double log_loss(double y, double y_pred);
 
-double error(DataFrame *Y, const double *Y_pred, size_t n);
+static double error(DataFrame *Y, const double *Y_pred, size_t n);
 
-void calc_gradient(double *gradient, struct LogisticRegressor *regressor, DataFrame *X, DataFrame *Y);
+static void calc_gradient(double *gradient, LogisticRegressor *regressor, DataFrame *X, DataFrame *Y);
 
-void predict_dataset(double *Y_pred, struct LogisticRegressor *regressor, DataFrame *X);
+static void predict_dataset(double *Y_pred, LogisticRegressor *regressor, DataFrame *X);
 
-void recalculate_beta(struct LogisticRegressor *regressor, double *gradient, double learning_rate);
+static void recalculate_beta(LogisticRegressor *regressor, double *gradient, double learning_rate);
 
-struct LogisticRegressor *init() {
-    struct LogisticRegressor *regressor = malloc(sizeof(struct LogisticRegressor));
+LogisticRegressor *lg_create()
+{
+    LogisticRegressor *regressor = malloc(sizeof(LogisticRegressor));
     if(!regressor)
         return NULL;
 
@@ -28,15 +29,16 @@ struct LogisticRegressor *init() {
     return regressor;
 }
 
-double lg_predict(struct LogisticRegressor *regressor, DataCell *X, size_t data_size) {
+double lg_predict(LogisticRegressor *regressor, DataCell *X, size_t data_size)
+{
     return squish(regressor->beta, X, data_size);
 }
 
-void lg_fit(struct LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epochs, double learning_rate, long seed) {
-    srand(seed);
-
+void lg_fit(LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epochs, double learning_rate)
+{
     /* TODO: Replace with dataframe method
-    for(size_t i = 0;i < data_size;i++) {
+    for(size_t i = 0;i < data_size;i++)
+    {
         X[i] = realloc(X[i], feature_cnt * sizeof(double));
         assert(X[i] != NULL);
 
@@ -52,7 +54,8 @@ void lg_fit(struct LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, siz
         regressor->beta[i] = (double) rand() / 10;
 
     printf("Initial betas: [");
-    for(size_t i = 0;i < regressor->beta_size-1;i++) {
+    for(size_t i = 0;i < regressor->beta_size-1;i++)
+    {
         printf("%lf, ", regressor->beta[i]);
     }
     printf("%lf]\n", regressor->beta[regressor->beta_size-1]);
@@ -66,7 +69,8 @@ void lg_fit(struct LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, siz
     assert(gradient != NULL);
 
 
-    for(size_t i = 0;i < epochs;i++) {
+    for(size_t i = 0;i < epochs;i++)
+    {
         if(i % 1000 == 0)
             printf("Epoch %ld loss: %lf", i, error(Y, Y_pred, data_size));
 
@@ -77,66 +81,81 @@ void lg_fit(struct LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, siz
     }
 
     printf("Best estimate for beta: [");
-    for(size_t i = 0;i < regressor->beta_size-1;i++) {
+    for(size_t i = 0;i < regressor->beta_size-1;i++)
+    {
         printf("%lf, ", regressor->beta[i]);
     }
     printf("%lf]\n", regressor->beta[regressor->beta_size-1]);
 }
 
-void predict_dataset(double *Y_pred, struct LogisticRegressor *regressor, DataFrame *X) {
+void lg_destroy(LogisticRegressor *regressor)
+{
+    free(regressor->beta);
+    free(regressor);
+}
+
+static void predict_dataset(double *Y_pred, LogisticRegressor *regressor, DataFrame *X)
+{
     assert(Y_pred != NULL);
 
-    for(size_t i = 0;i < X->rows;i++) {
+    for(size_t i = 0;i < X->rows;i++)
+    {
         Y_pred[i] =lg_predict(regressor, X->data[i], X->cols);
     }
 
 }
 
-void calc_gradient(double *gradient, struct LogisticRegressor *regressor, DataFrame *X, DataFrame *Y) {
+static void calc_gradient(double *gradient, LogisticRegressor *regressor, DataFrame *X, DataFrame *Y)
+{
     assert(gradient != NULL);
     assert(regressor->beta_size == X->cols);
 
-    for(size_t i = 0;i < X->rows;i++) {
+    for(size_t i = 0;i < X->rows;i++)
+    {
         double error = squish(regressor->beta, X->data[i], X->cols) - Y->data[i][0].as_double; // TODO: Add another check for string label or hope that the dependent variable is not a string
 
-        for(size_t k;k < X->cols;k++) {
+        for(size_t k;k < X->cols;k++)
+        {
             gradient[i] += (error * X->data[i][k].as_double);
         }
         gradient[i] *= ((double)1 / X->cols) * gradient[i];
     }
 }
 
-void recalculate_beta(struct LogisticRegressor *regressor, double *gradient, double learning_rate) {
-    for(size_t i = 0;i < regressor->beta_size;i++) {
+static void recalculate_beta(LogisticRegressor *regressor, double *gradient, double learning_rate)
+{
+    for(size_t i = 0;i < regressor->beta_size;i++)
+    {
         regressor->beta[i] = regressor->beta[i] + (gradient[i] * -learning_rate);
     }
 }
 
-double sigmoid(double x)
+static double sigmoid(double x)
 {
     return 1.0 / (1.0 + exp(-x));
 }
 
-double dot_dataframe(const double *a, DataCell *b, size_t n)
+static double dot_dataframe(const double *a, DataCell *b, size_t n)
 {
     double sum = 0.0;
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < n; ++i)
+    {
         sum += a[i] * b[i].as_double; // TODO: Add check for string label
     }
     return sum;
 }
 
-double squish(const double *beta, DataCell *x, size_t n)
+static double squish(const double *beta, DataCell *x, size_t n)
 {
     return sigmoid(dot_dataframe(beta, x, n));
 }
 
-double log_loss(double y, double y_pred)
+static double log_loss(double y, double y_pred)
 {
     return -((y * log(y_pred)) + ((1.0 - y) * log(1.0 - y_pred)));
 }
 
-double error(DataFrame *Y, const double *Y_pred, size_t n)
+static double error(DataFrame *Y, const double *Y_pred, size_t n)
 {
     double sum = 0.0;
     for (size_t i = 0; i < n; ++i)

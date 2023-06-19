@@ -1,14 +1,17 @@
+#pragma once
+
 #include "data.h"
 
-struct LogisticRegressor {
+typedef struct
+{
     double *beta;
     size_t beta_size;
-};
+}  LogisticRegressor;
 
-struct LogisticRegressor *init();
+LogisticRegressor *lg_create();
 
-void lg_fit(struct LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epochs, double learning_rate, long seed);
+void lg_fit(LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epochs, double learning_rate);
 
-double lg_predict(struct LogisticRegressor *regressor, DataCell *X, size_t data_size);
+double lg_predict(LogisticRegressor *regressor, DataCell *X, size_t data_size);
 
-void purge(struct LogisticRegressor *regressor);
+void lg_destroy(LogisticRegressor *regressor);

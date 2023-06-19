@@ -13,3 +13,6 @@ void setup_cwd()
     assert(0 <= chdir(dname));
     free(cwd);
 }
+
+#define UAI_MUST(status) assert(!(status));
+
