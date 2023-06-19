@@ -25,11 +25,12 @@ int main()
     UAI_MUST(df_create_vsplit(&test, &Y, 1, DATAFRAME_SAMPLE_SEQ));
     UAI_MUST(df_create_vsplit(&test, &X, 4, DATAFRAME_SAMPLE_SEQ));
 
-    LinearRegressor reg = {0};
+    LinearRegressor *reg = lr_init();
     lr_fit(&reg, &X, &Y, 5000, 0.14);
 
     for (size_t r=0; r < Y.rows; ++r)
         printf("Prediction: %lf for %zu row\n", lr_predict(&reg, X.data[r], X.cols), r);
+
 
     lr_destroy(&reg);
 

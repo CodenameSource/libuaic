@@ -20,6 +20,15 @@ double error(DataFrame *Y, const double *Y_pred, size_t n);
 
 void calc_gradient(double *gradient, LinearRegressor *reg, DataFrame *X, DataFrame *Y);
 
+LinearRegressor *lr_init() {
+    LinearRegressor *reg = malloc(sizeof(LinearRegressor));
+    if(!reg)
+        return NULL;
+
+    reg->betas = NULL;
+    reg->betas_size = 0;
+    return reg;
+}
 
 UAI_Status lr_fit(LinearRegressor *reg, DataFrame *X, DataFrame *y, size_t epochs, double learning_rate)
 {
@@ -34,18 +43,16 @@ UAI_Status lr_fit(LinearRegressor *reg, DataFrame *X, DataFrame *y, size_t epoch
         // FIXME: do we need the cast in this case??
         reg->betas[i] = (double)(rand() % 10) / 10;
 
-    double *Y_pred = malloc((X->rows + 1) * sizeof(double));
+    double *Y_pred = malloc(y->rows * sizeof(double));
     assert(Y_pred != NULL);
 
-    double *gradient = malloc((reg->betas_size + 1) * sizeof(double));
+    double *gradient = malloc(reg->betas_size * sizeof(double));
     assert(gradient != NULL);
 
-    while (epochs--)
-    {
+    for (size_t i = 0;i < epochs;i++) {
         predict_dataset(Y_pred, reg, X);
         if(epochs % 1000 == 0)
-            printf("test\n");
-            //printf("Epoch %ld loss: %lf\n", epochs, error(y, Y_pred, y->rows));
+            printf("Epoch %ld loss: %lf\n", i, error(y, Y_pred, y->rows));
 
         calc_gradient(gradient, reg, X, y);
         recalculate_beta(reg, gradient, learning_rate);
@@ -64,6 +71,7 @@ double lr_predict(LinearRegressor *reg, const DataCell *x, size_t x_size)
 void lr_destroy(LinearRegressor *reg)
 {
     free(reg->betas);
+    free(reg);
 }
 
 void predict_dataset(double *Y_pred, LinearRegressor *reg, DataFrame *X)
@@ -94,11 +102,11 @@ void calc_gradient(double *gradient, LinearRegressor *reg, DataFrame *X, DataFra
     {
         double error = lr_predict(reg, X->data[i], X->cols) - Y->data[i][0].as_double; // TODO: Add another check for string label or hope that the dependent variable is not a string
 
-        for(size_t k = 0;k < reg->betas_size;k++)
+        for(size_t k = 0;k < reg->betas_size-1;k++)
         {
-            gradient[i] += (error * X->data[i][k].as_double);
+            gradient[k] += (error * X->data[i][k].as_double);
         }
-        gradient[reg->betas_size] += (error * 1);
+        gradient[reg->betas_size-1] += (error * 1);
     }
 
     for(size_t i = 0;i < reg->betas_size;i++)
@@ -121,4 +129,4 @@ double dot_dataframe(const double *a, const DataCell *b, size_t n) {
         sum += a[i] * b[i].as_double;
     }
     return sum;
-} //TODO: Ffix this bs
+} //TODO: Fix this bs
