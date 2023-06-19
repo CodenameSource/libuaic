@@ -41,7 +41,7 @@ UAI_Status lr_fit(LinearRegressor *reg, DataFrame *X, DataFrame *y, size_t epoch
 
     for (size_t i = 0;i < reg->betas_size;i++)
         // FIXME: do we need the cast in this case??
-        reg->betas[i] = (double)(rand() % 10) / 10;
+        reg->betas[i] = (double)(rand() % 10) / 100;
 
     double *Y_pred = malloc(y->rows * sizeof(double));
     assert(Y_pred != NULL);

@@ -8,7 +8,7 @@ LIB = lib/libuaic.so
 OBJS = \
 	   src/uai_data.o \
 	   src/uai_linear_regression.o \
-	   src/common_math.o \
+	   src/uai_scaling.o
 
 BINS = \
 	   examples/dataframe/load_csv.out \
@@ -29,7 +29,7 @@ $(LIB): lib $(OBJS)
 	$(CC) -shared -o $(LIB) $(OBJS)
 
 .c.out:
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
+	$(CC) $(CFLAGS)  -o $@ $< $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) $(LIB) $(BINS)

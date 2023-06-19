@@ -5,6 +5,7 @@
 
 #include "../../include/uai/data.h"
 #include "../../include/uai/linear_regression.h"
+#include "../../include/uai/scaling.h"
 
 #include "../common.h"
 
@@ -26,13 +27,12 @@ int main()
     UAI_MUST(df_create_vsplit(&test, &X, 4, DATAFRAME_SAMPLE_SEQ));
 
     LinearRegressor *reg = lr_init();
-    lr_fit(&reg, &X, &Y, 5000, 0.14);
+    lr_fit(reg, &X, &Y, 2000, 0.015);
 
     for (size_t r=0; r < Y.rows; ++r)
-        printf("Prediction: %lf for %zu row\n", lr_predict(&reg, X.data[r], X.cols), r);
+        printf("%lf\n", uai_denormalize_value(lr_predict(reg, X.data[r], X.cols), Y.data[0][0].min, Y.data[0][0].delta));
 
-
-    lr_destroy(&reg);
+    lr_destroy(reg);
 
     df_destroy(&test);
     df_destroy(&X);
