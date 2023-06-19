@@ -10,4 +10,6 @@ typedef struct
 
 UAI_Status lr_fit(LinearRegressor *reg, DataFrame *X, DataFrame *Y, size_t epochs, double learning_rate);
 
-UAI_Status lr_predict(LinearRegressor *reg, const DataFrame *X, DataFrame *Y, size_t y_col);
+double lr_predict(LinearRegressor *reg, const DataCell *x, size_t x_size);
+
+void lr_destroy(LinearRegressor *reg);

@@ -7,101 +7,118 @@
 #include <math.h>
 #include <float.h>
 
-#include "./common_math.h"
 
-static void dot_product(size_t width, size_t height, DataFrame *X, double *y_hat, DataFrame *y, size_t y_row, double *result)
-{
-    for (size_t i = 0; i < width; i++)
-    {
-        result[i] = 0.0;
-        for (size_t j = 0; j < height; j++)
-            result[i] += X->data[j][i].as_double * (y_hat[j] - y->data[y_row][j].as_double);
-    }
-}
+void recalculate_beta(LinearRegressor *reg, const double *gradient, double learning_rate);
+
+double lr_predict(LinearRegressor *reg, const DataCell *x, size_t x_size);
+
+void predict_dataset(double *Y_pred, LinearRegressor *reg, DataFrame *X);
+
+double dot_dataframe(const double *a, const DataCell *b, size_t n);
+
+double error(DataFrame *Y, const double *Y_pred, size_t n);
+
+void calc_gradient(double *gradient, LinearRegressor *reg, DataFrame *X, DataFrame *Y);
+
 
 UAI_Status lr_fit(LinearRegressor *reg, DataFrame *X, DataFrame *y, size_t epochs, double learning_rate)
 {
     assert(1 <= X->rows && X->rows == y->rows);
 
-    size_t betas_size = X->cols+1;
-    double *betas = malloc(sizeof *betas * betas_size);
-    if (!betas)
+    reg->betas_size = X->cols+1;
+    reg->betas = malloc(reg->betas_size * sizeof(double));
+    if (!reg->betas)
         return UAI_ERRNO;
 
-    // TODO: error handling
-    UAI_MUST(df_prepend_cols(X, 1));
-    df_col_fill_const(X, 0, 1.0);
-
-
-    for (double *beta=betas; beta < betas + betas_size; ++beta)
+    for (size_t i = 0;i < reg->betas_size;i++)
         // FIXME: do we need the cast in this case??
-        *beta = (double)rand() / 10.;
+        reg->betas[i] = (double)(rand() % 10) / 10;
 
-    double *y_hat, *arrays = y_hat = malloc(sizeof *arrays * X->rows * 2);
-    assert(arrays);
-    double *partial_w = arrays + X->rows;
+    double *Y_pred = malloc((X->rows + 1) * sizeof(double));
+    assert(Y_pred != NULL);
+
+    double *gradient = malloc((reg->betas_size + 1) * sizeof(double));
+    assert(gradient != NULL);
+
     while (epochs--)
     {
-        // line equation
-        for (size_t r=0; r<X->rows; ++r)
-            y_hat[r] = dot_dataframe(betas, X->data[r], betas_size);
+        predict_dataset(Y_pred, reg, X);
+        if(epochs % 1000 == 0)
+            printf("test\n");
+            //printf("Epoch %ld loss: %lf\n", epochs, error(y, Y_pred, y->rows));
 
-        // calculate derrivatives
-        dot_product(betas_size, y->cols, X, y_hat, y, 0, partial_w);
-        for (double *pw=partial_w; pw < partial_w + X->rows; ++pw)
-        {
-            *pw = 2 * *pw  /  X->rows;
-            if (isinf(*pw))
-                *pw = *pw < 0 ? -DBL_MIN : DBL_MAX;
-        }
-
-        double sum = 0;
-        for (double *yh=y_hat; yh < y_hat + X->rows; ++yh)
-            for (size_t r=0; r < y->rows; ++r)
-            {
-                // TODO: custom column
-                if (y->data[r][0].type == DATACELL_DOUBLE)
-                    sum += *yh - y->data[r][0].as_double;
-                if (isinf(sum))
-                    sum = sum < 0 ? -DBL_MIN : DBL_MAX;
-            }
-        double partial_d = 2 * sum / X->rows;
-
-        // update the coefficients
-        for (double *b=betas+1; b < betas + betas_size; ++b)
-            for (double *pw=partial_w; pw < partial_w + X->rows; ++pw)
-            {
-                assert(!isnan(*b - learning_rate * *pw));
-                *b -= learning_rate * *pw;
-                assert(!isnan(*b));
-            }
-        betas[0] -= learning_rate * partial_d;
-        assert(!isnan(*betas));
+        calc_gradient(gradient, reg, X, y);
+        recalculate_beta(reg, gradient, learning_rate);
     }
 
-    reg->betas = betas, reg->betas_size = betas_size;
-
-    free(arrays);
+    free(Y_pred);
+    free(gradient);
     return UAI_OK;
 }
 
-UAI_Status lr_predict(LinearRegressor *reg, const DataFrame *X, DataFrame *Y, size_t y_col)
+double lr_predict(LinearRegressor *reg, const DataCell *x, size_t x_size)
 {
-    assert(reg->betas_size && X->cols == reg->betas_size - 1);
-    assert(Y->rows == X->rows);
-
-    DataFrame prepended_df = {0};
-    UAI_Status err = df_copy(X, &prepended_df);
-    if (err)
-        return err;
-    err = df_prepend_cols(&prepended_df, 1);
-    if (err)
-        return err;
-    df_col_fill_const(&prepended_df, 0, 1.0);
-
-    for (size_t r=0; r<Y->rows; ++r)
-        Y->data[r][y_col] = (DataCell){ .type=DATACELL_DOUBLE, .as_double=dot_dataframe(reg->betas, X->data[r], X->cols) };
-
-    df_destroy(&prepended_df);
-    return UAI_OK;
+    return dot_dataframe(reg->betas, x, x_size) + reg->betas[reg->betas_size-1];
 }
+
+void lr_destroy(LinearRegressor *reg)
+{
+    free(reg->betas);
+}
+
+void predict_dataset(double *Y_pred, LinearRegressor *reg, DataFrame *X)
+{
+    assert(Y_pred != NULL);
+
+    for(size_t i = 0;i < X->rows;i++)
+    {
+        Y_pred[i] = lr_predict(reg, X->data[i], X->cols);
+    }
+}
+
+
+void recalculate_beta(LinearRegressor *regressor, const double *gradient, double learning_rate)
+{
+    for(size_t i = 0;i < regressor->betas_size;i++)
+    {
+        regressor->betas[i] = regressor->betas[i] + (gradient[i] * -learning_rate);
+    }
+}
+
+void calc_gradient(double *gradient, LinearRegressor *reg, DataFrame *X, DataFrame *Y)
+{
+    assert(gradient != NULL);
+    assert(reg->betas_size-1 == X->cols);
+
+    for(size_t i = 0;i < X->rows;i++)
+    {
+        double error = lr_predict(reg, X->data[i], X->cols) - Y->data[i][0].as_double; // TODO: Add another check for string label or hope that the dependent variable is not a string
+
+        for(size_t k = 0;k < reg->betas_size;k++)
+        {
+            gradient[i] += (error * X->data[i][k].as_double);
+        }
+        gradient[reg->betas_size] += (error * 1);
+    }
+
+    for(size_t i = 0;i < reg->betas_size;i++)
+    {
+        gradient[i] /= X->rows;
+    }
+}
+
+double error(DataFrame *Y, const double *Y_pred, size_t n)
+{
+    double sum = 0.0;
+    for (size_t i = 0; i < n; ++i)
+        sum += (Y->data[i][0].as_double - Y_pred[i]) * (Y->data[i][0].as_double - Y_pred[i]);
+    return sum;
+}
+
+double dot_dataframe(const double *a, const DataCell *b, size_t n) {
+    double sum = 0.0;
+    for (size_t i = 0; i < n; ++i) {
+        sum += a[i] * b[i].as_double;
+    }
+    return sum;
+} //TODO: Ffix this bs
