@@ -7,6 +7,7 @@ LDFLAGS = -Llib -Wl,-rpath=$$PWD/lib -luaic -lm
 LIB = lib/libuaic.so
 OBJS = \
 	   src/uai_data.o \
+	   src/uai_scaling.o \
 
 BINS = \
 	   examples/dataframe/load_csv.out \
