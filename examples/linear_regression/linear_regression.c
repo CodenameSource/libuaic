@@ -17,7 +17,6 @@ int main()
     UAI_MUST(df_load_csv(&test, "csv/houses.csv", ','));
     df_set_header(&test, true);
     df_to_double(&test, DATACELL_CONVERT_STRICT);
-    df_fill(&test);
     df_normalize(&test);
 
     srand(time(NULL));
