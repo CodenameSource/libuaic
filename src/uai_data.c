@@ -283,15 +283,29 @@ UAI_Status df_create_vsplit(DataFrame *src, DataFrame *dst, size_t take, enum Da
     assert(take <= src->rows);
     assert(sampling == DATAFRAME_SAMPLE_SEQ && "Only sequential sampling is supported");
 
+    size_t new_rows = src->rows + !!src->header;
+    DataCell *new_cellbuf = malloc(sizeof *new_cellbuf * new_rows * take);
+    if (!new_cellbuf)
+        return UAI_ERRNO;
+
     UAI_Status err = df_copy(src, dst);
     if (err)
-        return err;
+        goto error_post_new_cellbuf;
 
     src->cols -= take;
-    for (DataCell *r = dst->cellbuf; r < dst->cellbuf + dst->rows * dst->cols; r += dst->cols)
-        memcpy(r, r + dst->cols - take, sizeof *r * take);
+    for (DataCell *s = dst->cellbuf + dst->cols - take, *d = new_cellbuf; d < new_cellbuf + new_rows * take; d += take, s += dst->cols)
+        memcpy(d, s, sizeof *d * take);
     dst->cols = take;
+    free(dst->cellbuf);
+    dst->cellbuf = new_cellbuf;
+    DataCell **rows = dst->header ? dst->data-1 : dst->data;
+    for (size_t r=0; r<new_rows; ++r)
+        rows[r] = new_cellbuf + r * take;
     return UAI_OK;
+
+error_post_new_cellbuf:
+    free(new_cellbuf);
+    return err;
 }
 
 UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
@@ -594,9 +608,10 @@ void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size
                 for (size_t dc=c; dc <= end_col; ++dc)
                 {
                     DataCell *cell_a=&df->data[r][c], *cell_b=&df->data[dr][dc];
-                    if (cell_a == cell_b || !df_cell_compare(cell_a, cell_b))
+                    if (cell_a != cell_b && !df_cell_compare(cell_a, cell_b))
                         cell_b->type = DATACELL_DOUBLE, cell_b->as_double = latest_label;
                 }
+            df->data[r][c].type = DATACELL_DOUBLE, df->data[r][c].as_double = latest_label;
         }
 }
 
