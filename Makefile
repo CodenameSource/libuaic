@@ -28,7 +28,7 @@ $(LIB): lib $(OBJS)
 	$(CC) -shared -o $(LIB) $(OBJS)
 
 .c.out:
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) $(LIB) $(BINS)

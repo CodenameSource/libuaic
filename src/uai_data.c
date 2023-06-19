@@ -610,9 +610,10 @@ void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size
                 for (size_t dc=c; dc <= end_col; ++dc)
                 {
                     DataCell *cell_a=&df->data[r][c], *cell_b=&df->data[dr][dc];
-                    if (cell_a == cell_b || !df_cell_compare(cell_a, cell_b))
+                    if (cell_a != cell_b && !df_cell_compare(cell_a, cell_b))
                         cell_b->type = DATACELL_DOUBLE, cell_b->as_double = latest_label;
                 }
+            df->data[r][c].type = DATACELL_DOUBLE, df->data[r][c].as_double = latest_label;
         }
 }
 

@@ -12,35 +12,26 @@ int main()
 {
     setup_cwd();
 
-    DataFrame test = {0};
-    UAI_MUST(df_load_csv(&test, "csv/houses.csv", ','));
+    DataFrame test = {0}, X = {0}, Y = {0};
+    UAI_MUST(df_load_csv(&test, "csv/student4.csv", ','));
     df_set_header(&test, true);
-    df_to_double(&test, DATACELL_CONVERT_STRICT);
-    df_normalize(&test);
 
-    srand(time(NULL));
+    df_to_double(&test, DATACELL_CONVERT_LAX);
 
-    DataFrame train = {0};
-    UAI_MUST(df_create_hsplit(&test, &train, test.rows / 5, DATAFRAME_SAMPLE_RAND));
 
-    DataFrame test_y = {0};
-    UAI_MUST(df_create_vsplit(&test, &test_y, 1, DATAFRAME_SAMPLE_SEQ));
+    UAI_MUST(df_create_vsplit(&test, &Y, 1, DATAFRAME_SAMPLE_SEQ));
+    UAI_MUST(df_create_vsplit(&test, &X, 4, DATAFRAME_SAMPLE_SEQ));
 
-    DataFrame train_y = {0};
-    UAI_MUST(df_create_vsplit(&train, &train_y, 1, DATAFRAME_SAMPLE_SEQ));
+
 
     LogisticRegressor *reg = lg_create();
-    lg_fit(reg, &train, &train_y, 5000, 0.14);
+    lg_fit(reg, &X, &Y, 5000, 0.14);
 
-    for (size_t r=0; r < test_y.rows; ++r)
-        test_y.data[r][0] = (DataCell){ .type=DATACELL_DOUBLE, .as_double=lg_predict(reg, test.data[r], test.rows) };
-
-    df_export_csv(&test, "out/houses_linear_regression.csv", ',');
-    df_export_csv(&test_y, "out/houses_linear_regression_y.csv", ',');
+    for (size_t r=0; r < Y.rows; ++r)
+        printf("Prediction: %lf for %zu row\n", lg_predict(reg, X.data[r], X.cols), r);
 
     df_destroy(&test);
-    df_destroy(&train);
-    df_destroy(&test_y);
-    df_destroy(&train_y);
+    df_destroy(&Y);
+    df_destroy(&X);
     lg_destroy(reg);
 }

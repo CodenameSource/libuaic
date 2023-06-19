@@ -36,22 +36,12 @@ double lg_predict(LogisticRegressor *regressor, DataCell *X, size_t data_size)
 
 void lg_fit(LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epochs, double learning_rate)
 {
-    /* TODO: Replace with dataframe method
-    for(size_t i = 0;i < data_size;i++)
-    {
-        X[i] = realloc(X[i], feature_cnt * sizeof(double));
-        assert(X[i] != NULL);
-
-        X[i][feature_cnt] = 1; // Appending 1 to the features matrix to simplify calculations(reduces required calculation to just the dot product of the betas and the features)
-    }
-    */
-
-    regressor->beta_size = X->cols;
+    regressor->beta_size = X->cols+1;
     regressor->beta = malloc((regressor->beta_size) * sizeof(double));
     assert(regressor->beta != NULL);
 
     for(size_t i = 0;i < regressor->beta_size;i++)
-        regressor->beta[i] = (double) rand() / 10;
+        regressor->beta[i] = (double)(rand() % 10);
 
     printf("Initial betas: [");
     for(size_t i = 0;i < regressor->beta_size-1;i++)
@@ -86,6 +76,9 @@ void lg_fit(LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epo
         printf("%lf, ", regressor->beta[i]);
     }
     printf("%lf]\n", regressor->beta[regressor->beta_size-1]);
+
+    free(Y_pred);
+    free(gradient);
 }
 
 void lg_destroy(LogisticRegressor *regressor)
@@ -100,7 +93,7 @@ static void predict_dataset(double *Y_pred, LogisticRegressor *regressor, DataFr
 
     for(size_t i = 0;i < X->rows;i++)
     {
-        Y_pred[i] =lg_predict(regressor, X->data[i], X->cols);
+        Y_pred[i] = lg_predict(regressor, X->data[i], X->cols);
     }
 
 }
@@ -108,17 +101,22 @@ static void predict_dataset(double *Y_pred, LogisticRegressor *regressor, DataFr
 static void calc_gradient(double *gradient, LogisticRegressor *regressor, DataFrame *X, DataFrame *Y)
 {
     assert(gradient != NULL);
-    assert(regressor->beta_size == X->cols);
+    assert(regressor->beta_size-1 == X->cols);
 
     for(size_t i = 0;i < X->rows;i++)
     {
         double error = squish(regressor->beta, X->data[i], X->cols) - Y->data[i][0].as_double; // TODO: Add another check for string label or hope that the dependent variable is not a string
 
-        for(size_t k;k < X->cols;k++)
+        for(size_t k = 0;k < regressor->beta_size;k++)
         {
             gradient[i] += (error * X->data[i][k].as_double);
         }
-        gradient[i] *= ((double)1 / X->cols) * gradient[i];
+        gradient[regressor->beta_size] += (error * 1);
+    }
+
+    for(size_t i = 0;i < regressor->beta_size;i++)
+    {
+        gradient[i] /= X->rows;
     }
 }
 
@@ -135,19 +133,15 @@ static double sigmoid(double x)
     return 1.0 / (1.0 + exp(-x));
 }
 
-static double dot_dataframe(const double *a, DataCell *b, size_t n)
+static double squish(const double *beta, DataCell *x, size_t n)
 {
     double sum = 0.0;
     for (size_t i = 0; i < n; ++i)
     {
-        sum += a[i] * b[i].as_double; // TODO: Add check for string label
+        sum += beta[i] * x[i].as_double; // TODO: Add check for string label
     }
-    return sum;
-}
-
-static double squish(const double *beta, DataCell *x, size_t n)
-{
-    return sigmoid(dot_dataframe(beta, x, n));
+    sum += beta[n];
+    return sigmoid(sum);
 }
 
 static double log_loss(double y, double y_pred)
