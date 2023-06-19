@@ -7,6 +7,8 @@ LDFLAGS = -Llib -Wl,-rpath=$$PWD/lib -luaic -lm
 LIB = lib/libuaic.so
 OBJS = \
 	   src/uai_data.o \
+	   src/uai_linear_regression.o \
+	   src/uai_scaling.o
 
 BINS = \
 	   examples/dataframe/load_csv.out \
@@ -16,6 +18,7 @@ BINS = \
 	   examples/dataframe/fill.out \
 	   examples/dataframe/resize.out \
 	   examples/dataframe/scale_data.out \
+	   examples/linear_regression/linear_regression.out \
 
 all: $(LIB) $(BINS)
 
@@ -26,7 +29,7 @@ $(LIB): lib $(OBJS)
 	$(CC) -shared -o $(LIB) $(OBJS)
 
 .c.out:
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
+	$(CC) $(CFLAGS)  -o $@ $< $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) $(LIB) $(BINS)

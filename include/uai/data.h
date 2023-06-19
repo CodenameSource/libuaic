@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -18,6 +20,7 @@ typedef struct
         double as_double;
         const char *as_str;
     };
+    double min, delta;
 } DataCell;
 
 /**
@@ -106,6 +109,15 @@ void df_range_normalize(DataFrame *df, size_t start_row, size_t start_col, size_
 void df_col_normalize(DataFrame *df, size_t col);
 
 void df_normalize(DataFrame *df);
+
+// TODO: docs
+void df_col_range_denormalize(DataFrame *df, size_t col, size_t start_row, size_t end_row);
+
+void df_range_denormalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_denormalize(DataFrame *df, size_t col);
+
+void df_denormalize(DataFrame *df);
 
 // TODO: docs
 int df_cell_compare(const DataCell *a, const DataCell *b);
