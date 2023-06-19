@@ -7,6 +7,7 @@ LDFLAGS = -Llib -Wl,-rpath=$$PWD/lib -luaic -lm
 LIB = lib/libuaic.so
 OBJS = \
 	   src/uai_data.o \
+	   src/uai_logistic_regression.o \
 	   src/uai_decision_tree.o \
 	   src/uai_scaling.o \
 	   src/uai_linear_regression.o \
@@ -20,6 +21,7 @@ BINS = \
 	   examples/dataframe/fill.out \
 	   examples/dataframe/resize.out \
 	   examples/dataframe/scale_data.out \
+	   examples/logistic_regression/logistic_regression.out \
 	   examples/classification/decision_tree.out \
 	   examples/linear_regression/linear_regression.out \
 
