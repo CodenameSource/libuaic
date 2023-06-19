@@ -25,7 +25,7 @@ int main()
 
 
     LogisticRegressor *reg = lg_create();
-    lg_fit(reg, &X, &Y, 5000, 0.14);
+    lg_fit(reg, &X, &Y, 10000, 0.00002);
 
     for (size_t r=0; r < Y.rows; ++r)
         printf("Prediction: %lf for %zu row\n", lg_predict(reg, X.data[r], X.cols), r);

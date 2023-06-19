@@ -41,7 +41,7 @@ void lg_fit(LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epo
     assert(regressor->beta != NULL);
 
     for(size_t i = 0;i < regressor->beta_size;i++)
-        regressor->beta[i] = (double)(rand() % 10);
+        regressor->beta[i] = (double)(rand() % 10) / 100000;
 
     printf("Initial betas: [");
     for(size_t i = 0;i < regressor->beta_size-1;i++)
@@ -61,11 +61,10 @@ void lg_fit(LogisticRegressor *regressor, DataFrame *X, DataFrame *Y, size_t epo
 
     for(size_t i = 0;i < epochs;i++)
     {
+        predict_dataset(Y_pred, regressor, X);
         if(i % 1000 == 0)
             printf("Epoch %ld loss: %lf", i, error(Y, Y_pred, data_size));
 
-
-        predict_dataset(Y_pred, regressor, X);
         calc_gradient(gradient, regressor, X, Y);
         recalculate_beta(regressor, gradient, learning_rate);
     }
@@ -146,7 +145,10 @@ static double squish(const double *beta, DataCell *x, size_t n)
 
 static double log_loss(double y, double y_pred)
 {
-    return -((y * log(y_pred)) + ((1.0 - y) * log(1.0 - y_pred)));
+    double sum;
+    sum = (isnan(log(y_pred)) || isinf(log(y_pred)) ? 0: log(y_pred)) * y;
+    sum += (1.0 - y) * (isnan(log(1.0 - y_pred)) || isinf(log(1.0 - y_pred)) ? 0: log(1.0 - y_pred));
+    return -sum;
 }
 
 static double error(DataFrame *Y, const double *Y_pred, size_t n)
@@ -154,6 +156,6 @@ static double error(DataFrame *Y, const double *Y_pred, size_t n)
     double sum = 0.0;
     for (size_t i = 0; i < n; ++i)
         sum += log_loss(Y->data[i][0].as_double, Y_pred[i]);
-    return (1 / n) * sum;
+    return sum / n;
 }
 
