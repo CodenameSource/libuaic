@@ -272,7 +272,6 @@ UAI_Status df_create_hsplit(DataFrame *src, DataFrame *dst, size_t take, enum Da
         return err;
 
     src->rows -= take;
-    // memmove(dst->data, dst->data + dst->rows - take, sizeof *dst->data * take);
     memmove(*dst->data, *dst->data + (dst->rows - take) * dst->cols, sizeof **dst->data * take * dst->cols);
     dst->rows = take;
     return UAI_OK;
