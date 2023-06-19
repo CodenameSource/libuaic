@@ -99,15 +99,6 @@ void df_col_range_min_max(const DataFrame *df, size_t col, size_t start_row, siz
 void df_col_min_max(const DataFrame *df, size_t col, double *min, double *max);
 
 // TODO: docs
-void df_col_range_standardize(DataFrame *df, size_t col, size_t start_row, size_t end_row);
-
-void df_range_standardize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
-
-void df_col_standardize(DataFrame *df, size_t col);
-
-void df_standardize(DataFrame *df);
-
-// TODO: docs
 void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t end_row);
 
 void df_range_normalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
