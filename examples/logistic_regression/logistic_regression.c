@@ -15,13 +15,13 @@ int main()
     DataFrame test = {0}, X = {0}, Y = {0};
     UAI_MUST(df_load_csv(&test, "csv/student4.csv", ','));
     df_set_header(&test, true);
-
     df_to_double(&test, DATACELL_CONVERT_LAX);
 
 
     UAI_MUST(df_create_vsplit(&test, &Y, 1, DATAFRAME_SAMPLE_SEQ));
     UAI_MUST(df_create_vsplit(&test, &X, 4, DATAFRAME_SAMPLE_SEQ));
 
+    df_normalize(&X);
 
 
     LogisticRegressor *reg = lg_create();
