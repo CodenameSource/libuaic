@@ -5,7 +5,6 @@
 
 #include "../common.h"
 
-#define UAI_MUST(status) assert(!(status));
 
 int main()
 {

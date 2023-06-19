@@ -13,6 +13,7 @@
 #include <math.h>
 
 #include "../include/uai/data.h"
+#include "../include/uai/scaling.h"
 
 enum { NO_CHAR = -2 };
 
@@ -272,7 +273,6 @@ UAI_Status df_create_hsplit(DataFrame *src, DataFrame *dst, size_t take, enum Da
         return err;
 
     src->rows -= take;
-    // memmove(dst->data, dst->data + dst->rows - take, sizeof *dst->data * take);
     memmove(*dst->data, *dst->data + (dst->rows - take) * dst->cols, sizeof **dst->data * take * dst->cols);
     dst->rows = take;
     return UAI_OK;
@@ -283,15 +283,29 @@ UAI_Status df_create_vsplit(DataFrame *src, DataFrame *dst, size_t take, enum Da
     assert(take <= src->rows);
     assert(sampling == DATAFRAME_SAMPLE_SEQ && "Only sequential sampling is supported");
 
+    size_t new_rows = src->rows + !!src->header;
+    DataCell *new_cellbuf = malloc(sizeof *new_cellbuf * new_rows * take);
+    if (!new_cellbuf)
+        return UAI_ERRNO;
+
     UAI_Status err = df_copy(src, dst);
     if (err)
-        return err;
+        goto error_post_new_cellbuf;
 
     src->cols -= take;
-    for (DataCell *r = dst->cellbuf; r < dst->cellbuf + dst->rows * dst->cols; r += dst->cols)
-        memcpy(r, r + dst->cols - take, sizeof *r * take);
+    for (DataCell *s = dst->cellbuf + dst->cols - take, *d = new_cellbuf; d < new_cellbuf + new_rows * take; d += take, s += dst->cols)
+        memcpy(d, s, sizeof *d * take);
     dst->cols = take;
+    free(dst->cellbuf);
+    dst->cellbuf = new_cellbuf;
+    DataCell **rows = dst->header ? dst->data-1 : dst->data;
+    for (size_t r=0; r<new_rows; ++r)
+        rows[r] = new_cellbuf + r * take;
     return UAI_OK;
+
+error_post_new_cellbuf:
+    free(new_cellbuf);
+    return err;
 }
 
 UAI_Status df_create(DataFrame *df, size_t num_rows, size_t num_cols)
@@ -512,7 +526,10 @@ void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t 
     for (size_t r=start_row; r <= end_row; ++r)
     {
         if (df->data[r][col].type == DATACELL_DOUBLE)
-            df->data[r][col].as_double = (df->data[r][col].as_double - min) / delta;
+        {
+            df->data[r][col].as_double = uai_normalized_value(df->data[r][col].as_double, min, delta);
+            df->data[r][col].min = min, df->data[r][col].delta = delta;
+        }
     }
 }
 
@@ -530,6 +547,31 @@ void df_col_normalize(DataFrame *df, size_t col)
 void df_normalize(DataFrame *df)
 {
     df_range_normalize(df, 0,0, df->rows-1,df->cols-1);
+}
+
+void df_col_range_denormalize(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            df->data[r][col].as_double = uai_denormalize_value(df->data[r][col].as_double, df->data[r][col].min, df->data[r][col].delta);
+    }
+}
+
+void df_range_denormalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_denormalize(df, c, start_row, end_row);
+}
+
+void df_col_denormalize(DataFrame *df, size_t col)
+{
+    df_col_range_denormalize(df, col, 0, df->rows-1);
+}
+
+void df_denormalize(DataFrame *df)
+{
+    df_range_denormalize(df, 0,0, df->rows-1,df->cols-1);
 }
 
 int df_cell_compare(const DataCell *a, const DataCell *b)
