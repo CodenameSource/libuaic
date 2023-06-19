@@ -27,7 +27,32 @@ To use **uAIC** in your C projects, follow these steps:
 Once you have linked the library with your project, you can start using **uAIC**. Here's a simple example to demonstrate how to train a linear regression model:
 
 ```c
-// TODO
+int main()
+{
+    DataFrame test = {0}, X = {0}, Y = {0};
+    UAI_MUST(df_load_csv(&test, "csv/houses.csv", ','));
+    df_set_header(&test, true);
+
+    df_to_double(&test, DATACELL_CONVERT_STRICT);
+    df_normalize(&test);
+
+    srand(time(NULL));
+
+    UAI_MUST(df_create_vsplit(&test, &Y, 1, DATAFRAME_SAMPLE_SEQ));
+    UAI_MUST(df_create_vsplit(&test, &X, 4, DATAFRAME_SAMPLE_SEQ));
+
+    LinearRegressor *reg = lr_init();
+    lr_fit(reg, &X, &Y, 2000, 0.015);
+
+    for (size_t r=0; r < Y.rows; ++r)
+        printf("%lf\n", uai_denormalize_value(lr_predict(reg, X.data[r], X.cols), Y.data[0][0].min, Y.data[0][0].delta));
+
+    lr_destroy(reg);
+
+    df_destroy(&test);
+    df_destroy(&X);
+    df_destroy(&Y);
+}
 ```
 
 For more detailed information on the available functionalities and how to use them, refer to the [documentation](https://github.com/CodenameSource/libuaic/wiki).
@@ -44,7 +69,16 @@ All the binaries will be built in `./examples/*.out`.
 
 The following examples are available:
 
-- [TODO](#)
+- `dataframe/load_csv`
+- `dataframe/convert`
+- `dataframe/export_csv`
+- `dataframe/split`
+- `dataframe/fill`
+- `dataframe/resize`
+- `dataframe/scale_data`
+- `logistic_regression/logistic_regression`
+- `classification/decision_tree`
+- `linear_regression/linear_regression`
 
 ## Contributing
 
