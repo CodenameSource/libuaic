@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdlib.h>
 #include "../include/uai/data.h"
 
