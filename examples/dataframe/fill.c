@@ -16,7 +16,7 @@ int main()
     df_set_header(&df, true);
     df_to_double(&df, DATACELL_CONVERT_STRICT);
 
-    df_fill(&df, 0);
+    df_fill(&df);
     df_export_csv(&df, "out/houses_filled.csv", ',');
 
     df_destroy(&df);
