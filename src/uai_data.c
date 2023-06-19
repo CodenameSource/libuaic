@@ -13,6 +13,7 @@
 #include <math.h>
 
 #include "../include/uai/data.h"
+#include "../include/uai/scaling.h"
 
 enum { NO_CHAR = -2 };
 
@@ -512,7 +513,7 @@ void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t 
     {
         if (df->data[r][col].type == DATACELL_DOUBLE)
         {
-            df->data[r][col].as_double = (df->data[r][col].as_double - min) / delta;
+            df->data[r][col].as_double = uai_normalized_value(df->data[r][col].as_double, min, delta);
             df->data[r][col].min = min, df->data[r][col].delta = delta;
         }
     }
@@ -539,7 +540,7 @@ void df_col_range_denormalize(DataFrame *df, size_t col, size_t start_row, size_
     for (size_t r=start_row; r <= end_row; ++r)
     {
         if (df->data[r][col].type == DATACELL_DOUBLE)
-            df->data[r][col].as_double = (df->data[r][col].as_double * df->data[r][col].delta) + df->data[r][col].min;
+            df->data[r][col].as_double = uai_denormalize_value(df->data[r][col].as_double, df->data[r][col].min, df->data[r][col].delta);
     }
 }
 
