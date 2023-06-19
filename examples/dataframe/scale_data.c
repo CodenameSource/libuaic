@@ -18,5 +18,8 @@ int main()
     df_normalize(&df);
     UAI_MUST(df_export_csv(&df, "out/houses_normalized.csv", ','));
 
+    df_denormalize(&df);
+    UAI_MUST(df_export_csv(&df, "out/houses_denormalized.csv", ','));
+
     df_destroy(&df);
 }

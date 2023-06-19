@@ -511,7 +511,10 @@ void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t 
     for (size_t r=start_row; r <= end_row; ++r)
     {
         if (df->data[r][col].type == DATACELL_DOUBLE)
+        {
             df->data[r][col].as_double = (df->data[r][col].as_double - min) / delta;
+            df->data[r][col].min = min, df->data[r][col].delta = delta;
+        }
     }
 }
 
@@ -529,6 +532,31 @@ void df_col_normalize(DataFrame *df, size_t col)
 void df_normalize(DataFrame *df)
 {
     df_range_normalize(df, 0,0, df->rows-1,df->cols-1);
+}
+
+void df_col_range_denormalize(DataFrame *df, size_t col, size_t start_row, size_t end_row)
+{
+    for (size_t r=start_row; r <= end_row; ++r)
+    {
+        if (df->data[r][col].type == DATACELL_DOUBLE)
+            df->data[r][col].as_double = (df->data[r][col].as_double * df->data[r][col].delta) + df->data[r][col].min;
+    }
+}
+
+void df_range_denormalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col)
+{
+    for (size_t c=start_col; c <= end_col; ++c)
+        df_col_range_denormalize(df, c, start_row, end_row);
+}
+
+void df_col_denormalize(DataFrame *df, size_t col)
+{
+    df_col_range_denormalize(df, col, 0, df->rows-1);
+}
+
+void df_denormalize(DataFrame *df)
+{
+    df_range_denormalize(df, 0,0, df->rows-1,df->cols-1);
 }
 
 int df_cell_compare(const DataCell *a, const DataCell *b)
