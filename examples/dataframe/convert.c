@@ -18,7 +18,7 @@ int main()
 
     UAI_MUST(df_copy(&df, &df2));
 
-    df_all_to_double(&df, DATACELL_CONVERT_LAX);
+    df_to_double(&df, DATACELL_CONVERT_LAX);
     assert(df.data[0][1].type == DATACELL_DOUBLE);
     assert(df.data[0][0].type == DATACELL_NAN);
     assert(df.data[2][1].type == DATACELL_DOUBLE);

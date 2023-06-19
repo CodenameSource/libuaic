@@ -5,9 +5,9 @@
 
 enum DataCellType
 {
+    DATACELL_NAN,
     DATACELL_STR,
     DATACELL_DOUBLE,
-    DATACELL_NAN,
 };
 
 typedef struct
@@ -53,6 +53,33 @@ void df_set_header(DataFrame *df, bool value);
 // TODO: docs
 UAI_Status df_copy(const DataFrame *original, DataFrame *copy);
 
+enum DataFrame_Sampling
+{
+    DATAFRAME_SAMPLE_SEQ,
+    DATAFRAME_SAMPLE_RAND,
+};
+
+// TODO: docs
+UAI_Status df_create_hsplit(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling);
+
+UAI_Status df_create_vsplit(DataFrame *src, DataFrame *dst, size_t take, enum DataFrame_Sampling sampling);
+
+// TODO: docs
+void df_col_range_fill(DataFrame *df, size_t col, size_t start_row, size_t end_row);
+
+void df_range_fill(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_fill(DataFrame *df, size_t col);
+
+void df_fill(DataFrame *df);
+
+// TODO: docs
+void df_range_fill_const(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col, double value);
+
+void df_col_fill_const(DataFrame *df, size_t col, double value);
+
+void df_fill_const(DataFrame *df, double value);
+
 enum DataCell_ConvertStrictness
 {
     DATACELL_CONVERT_LAX,
@@ -64,6 +91,48 @@ void df_range_to_double(DataFrame *df, size_t start_row, size_t start_col, size_
 
 void df_col_to_double(DataFrame *df, size_t col, enum DataCell_ConvertStrictness strictness);
 
-void df_all_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness);
+void df_to_double(DataFrame *df, enum DataCell_ConvertStrictness strictness);
+
+// TODO: docs
+void df_col_range_min_max(const DataFrame *df, size_t col, size_t start_row, size_t end_row, double *min, double *max);
+
+void df_col_min_max(const DataFrame *df, size_t col, double *min, double *max);
+
+// TODO: docs
+void df_col_range_standardize(DataFrame *df, size_t col, size_t start_row, size_t end_row);
+
+void df_range_standardize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_standardize(DataFrame *df, size_t col);
+
+void df_standardize(DataFrame *df);
+
+// TODO: docs
+void df_col_range_normalize(DataFrame *df, size_t col, size_t start_row, size_t end_row);
+
+void df_range_normalize(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_normalize(DataFrame *df, size_t col);
+
+void df_normalize(DataFrame *df);
+
+// TODO: docs
+int df_cell_compare(const DataCell *a, const DataCell *b);
+
+// TODO: docs
+void df_range_add_labels(DataFrame *df, size_t start_row, size_t start_col, size_t end_row, size_t end_col);
+
+void df_col_add_labels(DataFrame *df, size_t col);
+
+void df_add_labels(DataFrame *df);
+
+// TODO: docs
+void df_swap_rows(DataFrame *df, size_t row1, size_t row2);
+
+// TODO: docs
+void df_shuffle_rows(DataFrame *df);
+
+// TODO: docs
+UAI_Status df_prepend_cols(DataFrame *df, size_t new_cols);
 
 void df_destroy(DataFrame *df);
